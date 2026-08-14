@@ -1,0 +1,81 @@
+# Entornos locales
+.venv/
+.venv-cuda/
+venv/
+env/
+
+# Python y herramientas
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+
+# Corpus privado y salidas generadas
+corpus/raw/*
+!corpus/raw/.gitkeep
+corpus/cache/*
+!corpus/cache/.gitkeep
+corpus/processed/*
+!corpus/processed/.gitkeep
+corpus/queries/*
+!corpus/queries/.gitkeep
+outputs/*
+!outputs/.gitkeep
+
+# Artefactos de modelos, embeddings e indices
+*.faiss
+*.index
+*.bin
+embeddings*.npy
+embeddings*.npz
+metadata*.jsonl
+.cache/huggingface/
+hf_cache/
+models/
+tessdata/
+*.traineddata
+
+# Logs, temporales y sistema operativo
+*.log
+*.tmp
+*.temp
+*.bak
+*.partial
+*.incomplete
+.~*
+.DS_Store
+Thumbs.db
+ocr_prueba_temporal.*
+
+# IDE y configuracion local
+.vscode/
+.idea/
+*.local
+.env
+.env.*
+
+# Datos locales sensibles. La publicacion usa ademas escaneo de contenido staged.
+.secrets/
+
+# Evidencia operativa local con inventarios privados o rutas de host
+config/fresh_resume_approval.json
+docs/integration/cuda_embedding_benchmark_report.txt
+docs/integration/e2e_operator_handoff.txt
+docs/integration/e2e_phase_2_embedding_file_lock_postmortem.txt
+docs/integration/e2e_phase_2_operator_handoff_report.txt
+docs/integration/e2e_phase_2b_fresh_run_handoff_report.txt
+docs/integration/fresh_chunk_delta_postmortem.txt
+docs/integration/fresh_ingestion_delta_postmortem.txt
+docs/integration/fresh_resume_policy_report.txt
+docs/integration/mixed_pdf_hybrid_ocr_fix_report.txt
+docs/integration/pbf_duplicate_ingestion_fix_report.txt
+docs/integration/query_artifact_audit.txt
+
+# Evidencia local reemplazada o no aprobada para la publicacion final
+docs/integration/final_repository_publication_report.txt
+tests/chunking/evaluate_tokenizer_pipeline.py
+tests/chunking/results/tokenizer_pipeline_metrics.json

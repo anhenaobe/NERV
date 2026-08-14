@@ -1,0 +1,17 @@
+beautifulsoup4
+faiss-cpu
+langdetect
+numpy
+openpyxl
+pandas
+pillow
+pymupdf
+pytesseract
+pysbd
+pyyaml
+scikit-learn
+sentence-transformers
+sentencepiece
+torch
+tqdm
+transformers

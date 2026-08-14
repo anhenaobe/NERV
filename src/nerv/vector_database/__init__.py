@@ -1,0 +1,1 @@
+"""FAISS index lifecycle contracts."""

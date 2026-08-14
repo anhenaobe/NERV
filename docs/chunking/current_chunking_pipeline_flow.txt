@@ -1,0 +1,45 @@
+Actualizado: 2026-08-09
+
+FLUJO ACTUAL DE CHUNKING
+========================
+
+Narrativo:
+  documento validado
+  -> deteccion de idioma
+  -> split_sentences bounded (PySBD en bloques con carry)
+  -> create_chunks (oraciones completas, presupuesto del tokenizer y overlap)
+  -> hard-limit enforcement (solo chunks logicos > 512 IDs)
+  -> build_chunk_record (IDs, posicion, metadata y num_tokens)
+
+Tabular:
+  documento validado
+  -> filas no vacias
+  -> create_chunks
+  -> hard-limit enforcement (celdas/delimitadores si la fila supera 512)
+  -> registros
+
+Contrato:
+- limite soft: 256 IDs;
+- limite hard del encoder: 512 IDs totales, incluido passage: ;
+- overlap objetivo: 32 IDs;
+- overlap solamente con oraciones completas;
+- una unidad de 257 a 512 IDs se preserva completa;
+- una unidad > 512 se subdivide antes de construir/publicar registros.
+
+El chunker conserva orden, no genera chunks vacios y evalua el candidato unido
+porque la tokenizacion puede cambiar en los limites de whitespace.
+
+La capa hard es posterior al chunker normal y anterior a la enumeracion final.
+En ese seam se recuentan exactamente, en batch, todos los chunks logicos. Si un
+conteo estimado no coincide, el documento vuelve al agrupado escalar exacto
+antes de decidir si debe subdividirse.
+Primero intenta limites de celda para tabulares o separadores estructurales JSON;
+luego salto de linea, punto y coma, dos puntos, coma, puntuacion y whitespace.
+El fallback final usa offsets del tokenizer y recuento exacto, sin decode de IDs
+ni truncamiento. Los rangos de cobertura forman una particion completa del texto.
+
+El overlap interno de estas subdivisiones es como maximo 32 tokens y se reduce
+si el prefijo mas el fragmento excederia 512. Solo los registros subdivididos
+reciben metadata de padre, estrategia, indice/cantidad, overlap y offsets. Las
+posiciones finales se enumeran una sola vez y los chunk_id siguen el formato
+{doc_id}-chunk-{posicion:04d}.

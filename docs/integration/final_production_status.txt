@@ -1,0 +1,177 @@
+NERV FINAL PRODUCTION STATUS
+Audit date: 2026-08-13
+
+1. FINAL PRODUCTION VERDICT
+
+PRODUCTION_PASS
+
+The resume-fresh continuation completed and its artifact lineage passed an
+independent read-only validation. The later official-query-only continuation
+also passed without recomputing ingestion, chunks, document embeddings or the
+FAISS index.
+
+2. RUN ID
+
+20260813-174237-resume-fresh-86514215
+
+State: completed
+Started: 2026-08-13T22:42:39.057922+00:00
+Finished: 2026-08-13T23:22:20.018478+00:00
+Requested/executed stages: embeddings, faiss, retrieval, validation
+Inherited validated stages: ingestion, chunking
+Failed stage: none
+Device: cuda
+GPU: NVIDIA GeForce RTX 4050 Laptop GPU
+Torch: 2.11.0+cu128
+Torch CUDA: 12.8
+Embedding batch size: 16
+
+3. PARENT FRESH RUN
+
+20260813-145837-fresh-9187d9a4
+
+Inherited documents and chunks were validated by resume-fresh preflight before
+the continuation. Their identities are recorded below.
+
+4. GIT COMMIT BEFORE FINAL PUBLICATION
+
+f33df623e26a98118e513e1def4da11fae5ee59a
+
+The production run correctly recorded that its working tree was dirty because
+the accumulated pipeline changes had not yet been committed.
+
+5. DOCUMENT COUNT
+
+1761
+
+Path: outputs\runs\20260813-145837-fresh-9187d9a4\artifacts\documentos.jsonl
+SHA-256: F3ABB1E4F1A48D03801F2DCA91323BB50995C8E50E2B70C651DEAE07B39F7965
+Duplicate document IDs: 0
+
+6. CHUNK COUNT
+
+335393
+
+Path: outputs\runs\20260813-145837-fresh-9187d9a4\artifacts\chunks.jsonl
+SHA-256: 734E6E63FBD28D75509E6B2F1D0DD9FF1DA459779A03184DE74653B1AF2DB44D
+Ordered chunk-ID SHA-256:
+6372DCD706489B26CB046DA9E5176505893B0E9D37D90E67215484E948F68618
+Duplicate chunk IDs: 0
+Missing document references: 0
+Maximum stored tokens: 510
+
+7. EMBEDDING ROWS/DIMENSION
+
+335393 rows x 384 dimensions, float32, finite and L2-normalized.
+
+Path: outputs\runs\20260813-174237-resume-fresh-86514215\artifacts\embeddings.npy
+SHA-256: 2774A039F21E6199623F16F3D8E51F063BCAB06E4D820965D5C55FF5AABBA756
+Manifest source-chunk and ordered-ID hashes match the parent fresh chunks.
+Generation device: cuda
+Batch size: 16
+
+8. FAISS TYPE/NTOTAL
+
+IndexFlatIP
+dimension = 384
+ntotal = 335393
+
+Path: outputs\runs\20260813-174237-resume-fresh-86514215\artifacts\index.faiss
+SHA-256: 7251EB43DE4462D382F9B3E5FCD8EF405E6D7C80151DD3D908C2B17BF0EEB2B2
+The FAISS sidecar matches the embedding hash, semantic-config hash and ordered
+chunk-ID hash. The historical 336245-row embeddings/index were not used.
+
+9. RETRIEVAL STATUS
+
+PASS for 50 designated synthetic validation queries.
+
+All 50 result records validate. Every returned fragment chunk_id exists in the
+fresh 335393-chunk metadata and every fragment doc_id matches its source chunk.
+Unknown result chunks: 0
+Result document mismatches: 0
+
+10. VALIDATION STATUS
+
+PASS
+
+Independent checks used the repository-native embedding and FAISS validators,
+recomputed all recorded SHA-256 identities, checked matrix dtype/shape/finiteness/
+normalization, loaded the persisted index, validated results and checked
+cross-artifact references. Hash mismatches: 0. Orphaned temporary embedding
+artifacts: 0. The producer processes exited cleanly.
+
+11. INGESTION MEASURED TIME
+
+4089.325900 seconds (inherited measured time from parent fresh run)
+
+12. CHUNKING MEASURED TIME
+
+1168.050386 seconds (inherited measured time from parent fresh run)
+
+13. EMBEDDING MEASURED TIME
+
+2343.712950 seconds
+Throughput: 143.103276 vectors/second
+
+14. FAISS TIME
+
+13.230082 seconds
+
+15. RETRIEVAL TIME
+
+Query loading: 0.000724 seconds
+Query encoding: 1.743403 seconds
+FAISS search: 2.145130 seconds
+Inclusive retrieval-stage time: 3.889257 seconds
+
+16. VALIDATION TIME
+
+0.006754 seconds
+
+17. RESUMED-FRESH COMPUTE-EQUIVALENT E2E TIME
+
+7618.215329 seconds (2 hours, 6 minutes, 58.215 seconds)
+
+This combines inherited measured ingestion/chunking time with continuation
+compute. It is not one uninterrupted wall-clock execution. Continuation
+wall-clock time was 2380.960746 seconds.
+
+18. QUERY ARTIFACT STATUS
+
+QUERY_READY
+
+The 50-question source was rendered and OCR-assisted, then every transcription
+was checked against the rendered pages. The private UTF-8 JSONL adapter has the
+exact q001-q050 order, no empty or duplicate records, no replacement characters
+and the exact two-field production schema. Neither the adapter nor the question
+text is part of the public repository.
+
+19. OFFICIAL QUERY RESULTS STATUS
+
+OFFICIAL_QUERY_PASS
+
+All 50 real queries were encoded on CUDA and searched against the accepted
+fresh IndexFlatIP index. The result contains 50 records and 500 ranked
+fragments. Unknown chunk references: 0. Document mismatches: 0. Invalid scores:
+0. Ranking violations: 0. Synthetic validation results remain separate.
+
+Official-query timing:
+
+- query loading: 0.001619 seconds
+- query encoding: 2.633936 seconds
+- FAISS search: 3.027792 seconds
+- inclusive retrieval stage: 5.663346 seconds
+- result validation: 0.007729 seconds
+
+20. KNOWN LIMITATIONS
+
+- External competition provenance and relevance labels were not independently
+  available. OFFICIAL_QUERY_PASS proves faithful processing and result
+  integrity, not externally scored competition accuracy.
+- The compute-equivalent E2E duration combines two runs rather than measuring
+  one uninterrupted execution.
+- The repository-local .venv-cuda is stale on the audit host because its base
+  Python was removed. A separate prepared CUDA environment passed the offline
+  Torch/GPU/encoder smoke; operators must supply that executable explicitly or
+  rebuild the local venv outside the validation script.
+- Large runtime artifacts remain intentionally excluded from Git.

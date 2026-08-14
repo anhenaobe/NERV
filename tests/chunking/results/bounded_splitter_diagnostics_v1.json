@@ -1,0 +1,588 @@
+{
+  "schema_version": 1,
+  "status": "completed_with_findings",
+  "generated_at": "2026-08-06T04:30:17.933096+00:00",
+  "updated_at": "2026-08-06T05:07:12.729085+00:00",
+  "current_doc_id": null,
+  "current_stage": null,
+  "configuration": {
+    "input_path": "outputs\\resultados\\documentos.jsonl",
+    "output_path": "tests\\chunking\\results\\bounded_splitter_diagnostics_v1.json",
+    "whole_document_timeout_seconds": 900,
+    "excerpt_characters": 320,
+    "target_block_characters": 32768,
+    "maximum_block_characters": 65536,
+    "selected_doc_ids": [
+      "DOC-83e80067468b",
+      "DOC-2d7c54534744"
+    ]
+  },
+  "documents": [
+    {
+      "doc_id": "DOC-83e80067468b",
+      "character_count": 1381071,
+      "text_sha256": "fe6f752a1d3c3b6d95579a05b3c18b306895b7067f608b7d571c6b10414f0e5d",
+      "status": "completed_with_findings",
+      "classification": [
+        "block_context_difference",
+        "inherited_pysbd_transformation"
+      ],
+      "fixed": false,
+      "whole_document": {
+        "status": "completed",
+        "duration_seconds": 44.416119800007436,
+        "timeout_seconds": 900,
+        "sentence_count": 39656,
+        "sentence_list_digest": "1152d213757cdff2741c99430f004d73e8ea6728f5976d7ea97071e2135db4d8",
+        "normalized_reconstruction_match": false
+      },
+      "bounded": {
+        "status": "completed",
+        "duration_seconds": 9.78209799999604,
+        "sentence_count": 37915,
+        "sentence_list_digest": "eada831270753bdd9c585c17a8380411f351575afc4ae96bb81a62b070a8e10e",
+        "normalized_reconstruction_match": false,
+        "block_count": 39,
+        "maximum_block_size": 43999,
+        "maximum_carry_size": 79,
+        "oversized_carry_warning_count": 0
+      },
+      "bounded_reconstruction_diagnostic": {
+        "matches": false,
+        "first_differing_normalized_offset": 4700,
+        "source_offset": 4704,
+        "change_kind": "added",
+        "original_context_shape": "L D — LLLLLLLLL LLLL LLLL LLLLLLLLL LLLLLLLLLLL LLLL LLLLL DD. LLL LLLLLL LLLLLL ................................................................................ DD-DD D.D - LL LL-LLLLLLL LLLL ....................................................................... DD-DD D.D - LL LLLLLL-LLLLLL LLLL .....................",
+        "reconstructed_context_shape": "L D — LLLLLLLLL LLLL LLLL LLLLLLLLL LLLLLLLLLLL LLLL LLLLL DD. LLL LLLLLL LLLLLL ............................................................................... . DD-DD D.D - LL LL-LLLLLLL LLLL ...................................................................... . DD-DD D.D - LL LLLLLL-LLLLLL LLLL ...................",
+        "nearest_block": {
+          "block_number": 1,
+          "source_start_offset": 0,
+          "source_end_offset": 33592,
+          "distance_to_boundary": 4704,
+          "near_boundary": false,
+          "carry_before_characters": 0,
+          "carry_after_characters": 28,
+          "carry_before_normalized_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "carry_after_normalized_digest": "32711549c7d4ee0cc367044fd16c65ef2b9bee4d77e2eb8ef09e2a92f114f4ba"
+        }
+      },
+      "first_divergence": {
+        "exact_match": false,
+        "first_differing_sentence_index": 2222,
+        "matching_before": [
+          {
+            "sanitized_text_shape": "LLLLLL (DD-DD)",
+            "sanitized_normalized_shape": "LLLLLL (DD-DD)",
+            "length": 14,
+            "source_offset": 69709
+          },
+          {
+            "sanitized_text_shape": "• LLLLLLL LLL LLLLLLL LLLLL LL LLL LLLL LLLLL LLLLLLL (DD-DD)",
+            "sanitized_normalized_shape": "• LLLLLLL LLL LLLLLLL LLLLL LL LLL LLLL LLLLL LLLLLLL (DD-DD)",
+            "length": 61,
+            "source_offset": 69724
+          },
+          {
+            "sanitized_text_shape": "• LLLLL LLLLLLLLLLL LLLLL LLL LLLLLL-LL LLLLLLL LL LLLLLL LLLLLL (DD-DD)",
+            "sanitized_normalized_shape": "• LLLLL LLLLLLLLLLL LLLLL LLL LLLLLL-LL LLLLLLL LL LLLLLL LLLLLL (DD-DD)",
+            "length": 72,
+            "source_offset": 69786
+          },
+          {
+            "sanitized_text_shape": "• LLLLL LLL’L LLLLLLLLLLLLLL (DD-DD)",
+            "sanitized_normalized_shape": "• LLLLL LLL’L LLLLLLLLLLLLLL (DD-DD)",
+            "length": 36,
+            "source_offset": 69859
+          },
+          {
+            "sanitized_text_shape": "• LLLLLLLLL LLLLLLLLL LLLLL’L LLLLLLLL DDDD LLLLLLLLL LLLLL, “LLLLLLLL",
+            "sanitized_normalized_shape": "• LLLLLLLLL LLLLLLLLL LLLLL’L LLLLLLLL DDDD LLLLLLLLL LLLLL, “LLLLLLLL",
+            "length": 70,
+            "source_offset": 69896
+          }
+        ],
+        "baseline_after": [
+          {
+            "sanitized_text_shape": "LLLLL LLLLLLLLLLL”",
+            "sanitized_normalized_shape": "LLLLL LLLLLLLLLLL”",
+            "length": 18,
+            "source_offset": null
+          },
+          {
+            "sanitized_text_shape": "(DD-DD)",
+            "sanitized_normalized_shape": "(DD-DD)",
+            "length": 7,
+            "source_offset": 69986
+          },
+          {
+            "sanitized_text_shape": "• LLLLL LLL LLLL’L LLLLLLLL LLLLLLLLLL LLLLLLLL, LLLLL LLLLL LLLLLLLL",
+            "sanitized_normalized_shape": "• LLLLL LLL LLLL’L LLLLLLLL LLLLLLLLLL LLLLLLLL, LLLLL LLLLL LLLLLLLL",
+            "length": 69,
+            "source_offset": 69994
+          },
+          {
+            "sanitized_text_shape": "LLLLLLLL",
+            "sanitized_normalized_shape": "LLLLLLLL",
+            "length": 8,
+            "source_offset": null
+          },
+          {
+            "sanitized_text_shape": "(LLLL)-D",
+            "sanitized_normalized_shape": "(LLLL)-D",
+            "length": 8,
+            "source_offset": null
+          }
+        ],
+        "bounded_after": [
+          {
+            "sanitized_text_shape": "LLLLL LLLLLLLLLLL” (DD-DD)",
+            "sanitized_normalized_shape": "LLLLL LLLLLLLLLLL” (DD-DD)",
+            "length": 26,
+            "source_offset": 69967
+          },
+          {
+            "sanitized_text_shape": "• LLLLL LLL LLLL’L LLLLLLLL LLLLLLLLLL LLLLLLLL, LLLLL LLLLL LLLLLLLL",
+            "sanitized_normalized_shape": "• LLLLL LLL LLLL’L LLLLLLLL LLLLLLLLLL LLLLLLLL, LLLLL LLLLL LLLLLLLL",
+            "length": 69,
+            "source_offset": 69994
+          },
+          {
+            "sanitized_text_shape": "LLLLLLLL (LLLL)-D (DD-DD)",
+            "sanitized_normalized_shape": "LLLLLLLL (LLLL)-D (DD-DD)",
+            "length": 25,
+            "source_offset": 70064
+          },
+          {
+            "sanitized_text_shape": "• LLLLL LLL LLLL’L LLLLLLLLLLL LLLLLLLLL (DD-DD)",
+            "sanitized_normalized_shape": "• LLLLL LLL LLLL’L LLLLLLLLLLL LLLLLLLLL (DD-DD)",
+            "length": 48,
+            "source_offset": 70090
+          },
+          {
+            "sanitized_text_shape": "• LLLLL LLL LLLL’L LLLLLLLLLLLLL LLLLLLLLLLL LLLLLLLL (DD-DD)",
+            "sanitized_normalized_shape": "• LLLLL LLL LLLL’L LLLLLLLLLLLLL LLLLLLLLLLL LLLLLLLL (DD-DD)",
+            "length": 61,
+            "source_offset": 70139
+          }
+        ]
+      },
+      "remaining_limitation": "No algorithm correction was applied because the diagnostics did not demonstrate block construction or carry corruption.",
+      "divergence_local_windows": [
+        {
+          "radius_characters": 1600,
+          "source_start_offset": 68367,
+          "source_end_offset": 71567,
+          "whole_sentence_count": 66,
+          "bounded_sentence_count": 66,
+          "exact_sentence_list_match": true,
+          "whole_reconstruction_match": true,
+          "bounded_reconstruction_match": true,
+          "whole_first_reconstruction_difference": null,
+          "bounded_first_reconstruction_difference": null,
+          "whole_reconstruction_difference_digest": null,
+          "bounded_reconstruction_difference_digest": null
+        },
+        {
+          "radius_characters": 5000,
+          "source_start_offset": 64967,
+          "source_end_offset": 74967,
+          "whole_sentence_count": 203,
+          "bounded_sentence_count": 203,
+          "exact_sentence_list_match": true,
+          "whole_reconstruction_match": true,
+          "bounded_reconstruction_match": true,
+          "whole_first_reconstruction_difference": null,
+          "bounded_first_reconstruction_difference": null,
+          "whole_reconstruction_difference_digest": null,
+          "bounded_reconstruction_difference_digest": null
+        }
+      ],
+      "reconstruction_local_windows": [
+        {
+          "radius_characters": 1600,
+          "source_start_offset": 3104,
+          "source_end_offset": 6304,
+          "whole_sentence_count": 70,
+          "bounded_sentence_count": 70,
+          "exact_sentence_list_match": true,
+          "whole_reconstruction_match": false,
+          "bounded_reconstruction_match": false,
+          "whole_first_reconstruction_difference": 1598,
+          "bounded_first_reconstruction_difference": 1598,
+          "whole_reconstruction_difference_digest": "43d7af8fe654d4ec13938740c8840846f6bdc5a0ca5117a85075730f71cda9ce",
+          "bounded_reconstruction_difference_digest": "43d7af8fe654d4ec13938740c8840846f6bdc5a0ca5117a85075730f71cda9ce"
+        },
+        {
+          "radius_characters": 5000,
+          "source_start_offset": 0,
+          "source_end_offset": 9704,
+          "whole_sentence_count": 215,
+          "bounded_sentence_count": 215,
+          "exact_sentence_list_match": true,
+          "whole_reconstruction_match": false,
+          "bounded_reconstruction_match": false,
+          "whole_first_reconstruction_difference": 4700,
+          "bounded_first_reconstruction_difference": 4700,
+          "whole_reconstruction_difference_digest": "43d7af8fe654d4ec13938740c8840846f6bdc5a0ca5117a85075730f71cda9ce",
+          "bounded_reconstruction_difference_digest": "43d7af8fe654d4ec13938740c8840846f6bdc5a0ca5117a85075730f71cda9ce"
+        }
+      ],
+      "first_divergence_classification": "block_context_difference",
+      "reconstruction_classification": "inherited_pysbd_transformation",
+      "divergence_block_and_carry_context": {
+        "block_number": 3,
+        "source_start_offset": 67321,
+        "source_end_offset": 101438,
+        "raw_block_characters": 34117,
+        "combined_carry_block_characters": 34136,
+        "segmented_item_count": 675,
+        "emitted_item_count": 674,
+        "carry_before_characters": 19,
+        "carry_after_characters": 56,
+        "oversized_carry_warning": false,
+        "carry_before_normalized_digest": "2014d9e9fb173c3df3a42e2eb00fc158c4db65081a0ae4fd4ff892ae5eacfadf",
+        "carry_after_normalized_digest": "aa0cd8374966cd1cec610563b5d7e5f3f73fdfac30536d41bde3b6a919535a9a",
+        "emitted_content_normalized_digest": "0227466d764a68007af1377c249ec33888258fbdd98e4e412bf1238d88a5d74d",
+        "distance_to_boundary": 2646,
+        "near_boundary": false
+      },
+      "divergence_affected_block_pysbd": {
+        "block_number": 3,
+        "source_start_offset": 67321,
+        "source_end_offset": 101438,
+        "carry_before_segmentation": {
+          "length": 19,
+          "sanitized_excerpt_shape": "LLL LLLLLL-LLLLLL\n\n"
+        },
+        "combined_length": 34136,
+        "affected_pysbd_item_index": 58,
+        "pysbd_output_near_affected_item": [
+          {
+            "index": 53,
+            "length": 67,
+            "sanitized_excerpt_shape": "• LLLLL LLLLLLLLLLL LLLLL LLL LLLLLL-LLLLL LLLLLLL LLLLLLL (LLLLL)\n"
+          },
+          {
+            "index": 54,
+            "length": 15,
+            "sanitized_excerpt_shape": "LLLLLL (DD-DD)\n"
+          },
+          {
+            "index": 55,
+            "length": 62,
+            "sanitized_excerpt_shape": "• LLLLLLL LLL LLLLLLL LLLLL LL LLL LLLL LLLLL LLLLLLL (DD-DD)\n"
+          },
+          {
+            "index": 56,
+            "length": 73,
+            "sanitized_excerpt_shape": "• LLLLL LLLLLLLLLLL LLLLL LLL LLLLLL-LL LLLLLLL LL LLLLLL LLLLLL (DD-DD)\n"
+          },
+          {
+            "index": 57,
+            "length": 37,
+            "sanitized_excerpt_shape": "• LLLLL LLL’L LLLLLLLLLLLLLL (DD-DD)\n"
+          },
+          {
+            "index": 58,
+            "length": 71,
+            "sanitized_excerpt_shape": "• LLLLLLLLL LLLLLLLLL LLLLL’L LLLLLLLL DDDD LLLLLLLLL LLLLL, “LLLLLLLL\n"
+          },
+          {
+            "index": 59,
+            "length": 27,
+            "sanitized_excerpt_shape": "LLLLL LLLLLLLLLLL” (DD-DD)\n"
+          },
+          {
+            "index": 60,
+            "length": 70,
+            "sanitized_excerpt_shape": "• LLLLL LLL LLLL’L LLLLLLLL LLLLLLLLLL LLLLLLLL, LLLLL LLLLL LLLLLLLL\n"
+          },
+          {
+            "index": 61,
+            "length": 26,
+            "sanitized_excerpt_shape": "LLLLLLLL (LLLL)-D (DD-DD)\n"
+          },
+          {
+            "index": 62,
+            "length": 49,
+            "sanitized_excerpt_shape": "• LLLLL LLL LLLL’L LLLLLLLLLLL LLLLLLLLL (DD-DD)\n"
+          },
+          {
+            "index": 63,
+            "length": 62,
+            "sanitized_excerpt_shape": "• LLLLL LLL LLLL’L LLLLLLLLLLLLL LLLLLLLLLLL LLLLLLLL (DD-DD)\n"
+          }
+        ],
+        "carry_after_segmentation": {
+          "length": 56,
+          "sanitized_excerpt_shape": "LLLLLLL, LLL LLLLL LLLLLLLLLL LLLLLLLLL LL LLL LLLLLL.\n\n"
+        }
+      },
+      "reconstruction_block_and_carry_context": {
+        "block_number": 1,
+        "source_start_offset": 0,
+        "source_end_offset": 33592,
+        "raw_block_characters": 33592,
+        "combined_carry_block_characters": 33592,
+        "segmented_item_count": 1209,
+        "emitted_item_count": 1208,
+        "carry_before_characters": 0,
+        "carry_after_characters": 28,
+        "oversized_carry_warning": false,
+        "carry_before_normalized_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "carry_after_normalized_digest": "32711549c7d4ee0cc367044fd16c65ef2b9bee4d77e2eb8ef09e2a92f114f4ba",
+        "emitted_content_normalized_digest": "b56a8dc89441bfdf3eb0347ab7781d29714c3498dc47c0ebdaf856748f35d386",
+        "distance_to_boundary": 4704,
+        "near_boundary": false
+      },
+      "reconstruction_affected_block_pysbd": {
+        "block_number": 1,
+        "source_start_offset": 0,
+        "source_end_offset": 33592,
+        "carry_before_segmentation": {
+          "length": 0,
+          "sanitized_excerpt_shape": ""
+        },
+        "combined_length": 33592,
+        "affected_pysbd_item_index": 103,
+        "pysbd_output_near_affected_item": [
+          {
+            "index": 98,
+            "length": 43,
+            "sanitized_excerpt_shape": "LLL L L L LL L L LLL LLLLL L L LL LLLLLLLL\n"
+          },
+          {
+            "index": 99,
+            "length": 14,
+            "sanitized_excerpt_shape": "L L L L L L L\n"
+          },
+          {
+            "index": 100,
+            "length": 16,
+            "sanitized_excerpt_shape": "L L L L L L L L\n"
+          },
+          {
+            "index": 101,
+            "length": 65,
+            "sanitized_excerpt_shape": "LLLLLLL D — LLLLLLLLL LLLL LLLL LLLLLLLLL LLLLLLLLLLL LLLL LLLLL\n"
+          },
+          {
+            "index": 102,
+            "length": 4,
+            "sanitized_excerpt_shape": "DD. "
+          },
+          {
+            "index": 103,
+            "length": 97,
+            "sanitized_excerpt_shape": "LLL LLLLLL LLLLLL ..............................................................................."
+          },
+          {
+            "index": 104,
+            "length": 2,
+            "sanitized_excerpt_shape": ". "
+          },
+          {
+            "index": 105,
+            "length": 7,
+            "sanitized_excerpt_shape": "DD-DD\n\n"
+          },
+          {
+            "index": 106,
+            "length": 95,
+            "sanitized_excerpt_shape": "D.D - LL LL-LLLLLLL LLLL ......................................................................"
+          },
+          {
+            "index": 107,
+            "length": 2,
+            "sanitized_excerpt_shape": ". "
+          },
+          {
+            "index": 108,
+            "length": 7,
+            "sanitized_excerpt_shape": "DD-DD\n\n"
+          }
+        ],
+        "carry_after_segmentation": {
+          "length": 28,
+          "sanitized_excerpt_shape": "LLLLL LLLLLLLLLL LLL LLLLL\n\n"
+        }
+      }
+    },
+    {
+      "doc_id": "DOC-2d7c54534744",
+      "character_count": 3551463,
+      "text_sha256": "e39cf0226826626894c37edb53d2c7a7b0cf4a0f376fc64dffc157009454fde1",
+      "status": "completed_with_findings",
+      "classification": [
+        "inherited_pysbd_transformation"
+      ],
+      "fixed": false,
+      "whole_document": {
+        "status": "timed_out",
+        "duration_seconds": 900.0348596000113,
+        "timeout_seconds": 900,
+        "sentence_count": null,
+        "sentence_list_digest": null,
+        "normalized_reconstruction_match": null
+      },
+      "bounded": {
+        "status": "completed",
+        "duration_seconds": 120.49083239999891,
+        "sentence_count": 114847,
+        "sentence_list_digest": "1ea44426d841b1c67d50baa1d646d1efbe5ae69f80ebdf9d432610b3196fa57f",
+        "normalized_reconstruction_match": false,
+        "block_count": 103,
+        "maximum_block_size": 64647,
+        "maximum_carry_size": 39,
+        "oversized_carry_warning_count": 0
+      },
+      "bounded_reconstruction_diagnostic": {
+        "matches": false,
+        "first_differing_normalized_offset": 932,
+        "source_offset": 933,
+        "change_kind": "added",
+        "original_context_shape": "L LLL LL LLLLL LL LLL ‘‘LLLLLLLL LLLLLLL LLLLLLLLLLLLL LLL LLL LLLLLL LLLL DDDD’’. LLL. D. LLLLLLLLLLLL LL LLL LLLL LLLLLLLLL; LLLLL LL LLLLLLLL. (L) LLLLLLLLL.—LLLL LLL LL LLLLLLLLL LLLL LLLL LLLLLLLLL LL LLLLLLL: (D) LLLLLLLL L—LLLLLLLLLL LL LLLLLLL LLLLLLLLLLLLLL. (D) LLLLLLLL L—LLLLLLLL LLLLLLLLLLLL LLLLLLLLLLLLLL.",
+        "reconstructed_context_shape": "L LLL LL LLLLL LL LLL ‘‘LLLLLLLL LLLLLLL LLLLLLLLLLLLL LLL LLL LLLLLL LLLL DDDD’’. LLL. D. LLLLLLLLLLLL LL LLL LLLL LLLLLLLLL; LLLLL LL LLLLLLLL. (L) LLLLLLLLL. —LLLL LLL LL LLLLLLLLL LLLL LLLL LLLLLLLLL LL LLLLLLL: (D) LLLLLLLL L—LLLLLLLLLL LL LLLLLLL LLLLLLLLLLLLLL. (D) LLLLLLLL L—LLLLLLLL LLLLLLLLLLLL LLLLLLLLLLLLLL",
+        "nearest_block": {
+          "block_number": 1,
+          "source_start_offset": 0,
+          "source_end_offset": 36065,
+          "distance_to_boundary": 933,
+          "near_boundary": false,
+          "carry_before_characters": 0,
+          "carry_after_characters": 39,
+          "carry_before_normalized_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "carry_after_normalized_digest": "f062737616a8868db181d2833e689716e846a9b72532801c4634ef8fb4f58ac2"
+        }
+      },
+      "first_divergence": {
+        "status": "unavailable",
+        "reason": "Whole-document baseline did not complete."
+      },
+      "remaining_limitation": "No algorithm correction was applied because the diagnostics did not demonstrate block construction or carry corruption.",
+      "divergence_local_windows": [],
+      "reconstruction_local_windows": [
+        {
+          "radius_characters": 1600,
+          "source_start_offset": 0,
+          "source_end_offset": 2533,
+          "whole_sentence_count": 89,
+          "bounded_sentence_count": 91,
+          "exact_sentence_list_match": false,
+          "whole_reconstruction_match": false,
+          "bounded_reconstruction_match": false,
+          "whole_first_reconstruction_difference": 932,
+          "bounded_first_reconstruction_difference": 932,
+          "whole_reconstruction_difference_digest": "5b96285502017dbad213400e35dd95d41456b533bd298b37fca55ceac46e0f6c",
+          "bounded_reconstruction_difference_digest": "5b96285502017dbad213400e35dd95d41456b533bd298b37fca55ceac46e0f6c"
+        },
+        {
+          "radius_characters": 5000,
+          "source_start_offset": 0,
+          "source_end_offset": 5933,
+          "whole_sentence_count": 188,
+          "bounded_sentence_count": 190,
+          "exact_sentence_list_match": false,
+          "whole_reconstruction_match": false,
+          "bounded_reconstruction_match": false,
+          "whole_first_reconstruction_difference": 932,
+          "bounded_first_reconstruction_difference": 932,
+          "whole_reconstruction_difference_digest": "5b96285502017dbad213400e35dd95d41456b533bd298b37fca55ceac46e0f6c",
+          "bounded_reconstruction_difference_digest": "5b96285502017dbad213400e35dd95d41456b533bd298b37fca55ceac46e0f6c"
+        }
+      ],
+      "reconstruction_classification": "inherited_pysbd_transformation",
+      "reconstruction_block_and_carry_context": {
+        "block_number": 1,
+        "source_start_offset": 0,
+        "source_end_offset": 36065,
+        "raw_block_characters": 36065,
+        "combined_carry_block_characters": 36065,
+        "segmented_item_count": 1066,
+        "emitted_item_count": 1065,
+        "carry_before_characters": 0,
+        "carry_after_characters": 39,
+        "oversized_carry_warning": false,
+        "carry_before_normalized_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "carry_after_normalized_digest": "f062737616a8868db181d2833e689716e846a9b72532801c4634ef8fb4f58ac2",
+        "emitted_content_normalized_digest": "7a14b2bf81b228b5134591e401e310492e9fbd19bee0676855a28a9729d54176",
+        "distance_to_boundary": 933,
+        "near_boundary": false
+      },
+      "reconstruction_affected_block_pysbd": {
+        "block_number": 1,
+        "source_start_offset": 0,
+        "source_end_offset": 36065,
+        "carry_before_segmentation": {
+          "length": 0,
+          "sanitized_excerpt_shape": ""
+        },
+        "combined_length": 36065,
+        "affected_pysbd_item_index": 33,
+        "pysbd_output_near_affected_item": [
+          {
+            "index": 28,
+            "length": 52,
+            "sanitized_excerpt_shape": "LLL LLLLLL LLLLLL LL LLLLLLL LL LLLLLLLL LLLLLLLLL,\n"
+          },
+          {
+            "index": 29,
+            "length": 24,
+            "sanitized_excerpt_shape": "LLLLLLL D. LLLLL LLLLL.\n"
+          },
+          {
+            "index": 30,
+            "length": 62,
+            "sanitized_excerpt_shape": "LLLL LLL LLL LL LLLLL LL LLL ‘‘LLLLLLLL LLLLLLL LLLLLLLLLLLLL\n"
+          },
+          {
+            "index": 31,
+            "length": 28,
+            "sanitized_excerpt_shape": "LLL LLL LLLLLL LLLL DDDD’’.\n"
+          },
+          {
+            "index": 32,
+            "length": 63,
+            "sanitized_excerpt_shape": "LLL. D. LLLLLLLLLLLL LL LLL LLLL LLLLLLLLL; LLLLL LL LLLLLLLL.\n"
+          },
+          {
+            "index": 33,
+            "length": 14,
+            "sanitized_excerpt_shape": "(L) LLLLLLLLL."
+          },
+          {
+            "index": 34,
+            "length": 46,
+            "sanitized_excerpt_shape": "—LLLL LLL LL LLLLLLLLL LLLL LLLL LLLLLLLLL LL\n"
+          },
+          {
+            "index": 35,
+            "length": 9,
+            "sanitized_excerpt_shape": "LLLLLLL:\n"
+          },
+          {
+            "index": 36,
+            "length": 53,
+            "sanitized_excerpt_shape": "(D) LLLLLLLL L—LLLLLLLLLL LL LLLLLLL LLLLLLLLLLLLLL.\n"
+          },
+          {
+            "index": 37,
+            "length": 53,
+            "sanitized_excerpt_shape": "(D) LLLLLLLL L—LLLLLLLL LLLLLLLLLLLL LLLLLLLLLLLLLL.\n"
+          },
+          {
+            "index": 38,
+            "length": 54,
+            "sanitized_excerpt_shape": "(D) LLLLLLLL L—LLLLLLLLLL LL LLLLLL LLLLLLLL LLLLLLLL\n"
+          }
+        ],
+        "carry_after_segmentation": {
+          "length": 39,
+          "sanitized_excerpt_shape": "LLLLLLD LL LLLLLDLDLDLLLL LLLL LLLLLL\n\n"
+        }
+      }
+    }
+  ],
+  "checkpoint_sequence": 13,
+  "refined_at": "2026-08-06T05:07:12.729085+00:00"
+}

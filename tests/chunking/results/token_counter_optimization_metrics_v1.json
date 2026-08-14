@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-07T19:43:09.931514+00:00",
+  "benchmark": "token_counter_return_length_v1",
+  "model_name": "intfloat/multilingual-e5-small",
+  "tokenizer_class": "XLMRobertaTokenizer",
+  "tokenizer_is_fast": true,
+  "add_special_tokens": false,
+  "document_prefix": "passage: ",
+  "truncation": false,
+  "batch_size": 256,
+  "measured_repetitions": 5,
+  "environment": {
+    "python": "3.12.13 (main, Mar  3 2026, 15:01:35) [MSC v.1944 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "machine": "AMD64",
+    "logical_processor_count": 12
+  },
+  "dependency_versions": {
+    "nerv": "0.1.0",
+    "transformers": "5.14.1",
+    "tokenizers": "0.22.2"
+  },
+  "source_fingerprints": {
+    "benchmark_sha256": "c57e56d1ee1c0994307e24d6662f8bd0bb9cd5f5277983935fda4a7165062c56",
+    "token_counter_sha256": "89cec20011e4cdc2590fae2677c744d073869c8447e8e1d1d90d0dec879c5c8e",
+    "encoder_config_sha256": "6a2e846f67a479ed4a7a031779c0cad803168bd2a74d7d9a51c7b1ed2861e753"
+  },
+  "workloads": [
+    {
+      "name": "many_short_texts",
+      "text_count": 4096,
+      "total_characters": 101290,
+      "batch_size": 256,
+      "warmup_runs_per_implementation": 1,
+      "measured_repetitions": 5,
+      "reference_durations_seconds": [
+        0.08590359999652719,
+        0.0844719000015175,
+        0.11221309999382356,
+        0.10110400000121444,
+        0.0915753000008408
+      ],
+      "optimized_durations_seconds": [
+        0.08410010000079637,
+        0.07712789999641245,
+        0.07832670000061626,
+        0.08030159999907482,
+        0.07931130000361009
+      ],
+      "reference_median_seconds": 0.0915753000008408,
+      "optimized_median_seconds": 0.07931130000361009,
+      "speedup_ratio": 1.1546311811390366,
+      "exact_count_equality": true,
+      "counts_sha256": "6a741f0d3217f78580bceb8493c4439e3ded7cb5baac6dd4709c061b79f63082",
+      "reference_tracemalloc_peak_bytes": 622500,
+      "optimized_tracemalloc_peak_bytes": 359248
+    },
+    {
+      "name": "medium_sentences",
+      "text_count": 1024,
+      "total_characters": 532480,
+      "batch_size": 256,
+      "warmup_runs_per_implementation": 1,
+      "measured_repetitions": 5,
+      "reference_durations_seconds": [
+        0.1405490000033751,
+        0.15190129999973578,
+        0.15507130000332836,
+        0.1518869999999879,
+        0.1470104000036372
+      ],
+      "optimized_durations_seconds": [
+        0.13055429999803891,
+        0.14340529999753926,
+        0.16307229999802075,
+        0.13729610000154935,
+        0.11986320000141859
+      ],
+      "reference_median_seconds": 0.1518869999999879,
+      "optimized_median_seconds": 0.13729610000154935,
+      "speedup_ratio": 1.1062732298898068,
+      "exact_count_equality": true,
+      "counts_sha256": "a1da35ee2383e605535f3fc0ab60ad9df187900c9d9a001bceaab2562e390db2",
+      "reference_tracemalloc_peak_bytes": 2321256,
+      "optimized_tracemalloc_peak_bytes": 1073768
+    },
+    {
+      "name": "long_tabular_rows",
+      "text_count": 256,
+      "total_characters": 667504,
+      "batch_size": 256,
+      "warmup_runs_per_implementation": 1,
+      "measured_repetitions": 5,
+      "reference_durations_seconds": [
+        0.24366420000296785,
+        0.2953495000037947,
+        0.2892241000008653,
+        0.2561561999973492,
+        0.23840499999641906
+      ],
+      "optimized_durations_seconds": [
+        0.17726799999945797,
+        0.1764273999942816,
+        0.19272949999867706,
+        0.22227149999525864,
+        0.20165380000253208
+      ],
+      "reference_median_seconds": 0.2561561999973492,
+      "optimized_median_seconds": 0.19272949999867706,
+      "speedup_ratio": 1.3290969986385452,
+      "exact_count_equality": true,
+      "counts_sha256": "721813ef4e5d546eadea2e304f2f9fac5fe780f7c210ecaa18cd58c832875f9f",
+      "reference_tracemalloc_peak_bytes": 12494772,
+      "optimized_tracemalloc_peak_bytes": 9883376
+    },
+    {
+      "name": "mixed_batch",
+      "text_count": 2048,
+      "total_characters": 308410,
+      "batch_size": 256,
+      "warmup_runs_per_implementation": 1,
+      "measured_repetitions": 5,
+      "reference_durations_seconds": [
+        0.1602971999964211,
+        0.22678790000645677,
+        0.17786010000418173,
+        0.14234940000460483,
+        0.19296030000259634
+      ],
+      "optimized_durations_seconds": [
+        0.12744519999978365,
+        0.15660910000588046,
+        0.151435700005095,
+        0.10656359999848064,
+        0.1187078000002657
+      ],
+      "reference_median_seconds": 0.17786010000418173,
+      "optimized_median_seconds": 0.12744519999978365,
+      "speedup_ratio": 1.3955810026935787,
+      "exact_count_equality": true,
+      "counts_sha256": "823dad642f586c01893478690c5e8ecebf6be1ac2bb87a4c5dcb984769a8b1e5",
+      "reference_tracemalloc_peak_bytes": 1773413,
+      "optimized_tracemalloc_peak_bytes": 823841
+    },
+    {
+      "name": "large_synthetic_batch",
+      "text_count": 8192,
+      "total_characters": 178264,
+      "batch_size": 256,
+      "warmup_runs_per_implementation": 1,
+      "measured_repetitions": 5,
+      "reference_durations_seconds": [
+        0.14713170000322862,
+        0.24947029999748338,
+        0.19396479999704752,
+        0.15606269999989308,
+        0.17614079999475507
+      ],
+      "optimized_durations_seconds": [
+        0.15222070000163512,
+        0.15258410000387812,
+        0.13024959999893326,
+        0.1744269999981043,
+        0.12574570000288077
+      ],
+      "reference_median_seconds": 0.17614079999475507,
+      "optimized_median_seconds": 0.15222070000163512,
+      "speedup_ratio": 1.1571409144279523,
+      "exact_count_equality": true,
+      "counts_sha256": "103807e94ec36708e5f9dd3d6858e733c87a38068639192ea434649026414526",
+      "reference_tracemalloc_peak_bytes": 649612,
+      "optimized_tracemalloc_peak_bytes": 376868
+    }
+  ],
+  "total_benchmark_duration_seconds": 14.670490299999074,
+  "memory_measurement_scope": "tracemalloc Python allocations only; tokenizer/native RSS is not measured",
+  "implementation_note": "The real tokenizer returns input_ids together with length; the optimized adapter avoids Python token-ID validation and scalar ID copying."
+}

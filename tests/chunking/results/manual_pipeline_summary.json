@@ -1,0 +1,19 @@
+{
+  "document_count": 30,
+  "chunk_count": 31,
+  "sentence_count": 108,
+  "oversized_chunk_count": 1,
+  "minimum_tokens_per_chunk": 22,
+  "maximum_tokens_per_chunk": 438,
+  "average_tokens_per_chunk": 54.54838709677419,
+  "processing_duration_seconds": 0.21862010000040755,
+  "documents_per_second": 137.22434487928638,
+  "chunks_per_second": 141.79848970859592,
+  "input_path": "tests\\chunking\\fixtures\\codefest_fictional_documents.jsonl",
+  "output_path": "tests\\chunking\\results\\manual_pipeline_chunks.jsonl",
+  "encoder_model_name": "intfloat/multilingual-e5-small",
+  "tokenizer_class": "XLMRobertaTokenizer",
+  "tokenizer_revision": null,
+  "max_tokens": 256,
+  "overlap_tokens": 32
+}

@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "description": "Frozen representative real-corpus benchmark selection. The manifest references source documents and does not duplicate giant content in the repository.",
+  "source_path": "outputs/resultados/documentos.jsonl",
+  "selection_policy": {
+    "largest_csv": 1,
+    "large_pdfs": 3,
+    "medium_documents": 4,
+    "small_documents": 4,
+    "languages": [
+      "es",
+      "en",
+      "pt"
+    ],
+    "ambiguous_language_case": true,
+    "oversized_unit_case": true,
+    "tabular_case": true
+  },
+  "doc_ids": [
+    "DOC-9b7f304a0986",
+    "DOC-2d7c54534744",
+    "DOC-0803e0a6caca",
+    "DOC-81edf5b917c4",
+    "DOC-645daf37e2e6",
+    "DOC-716c76688ef0",
+    "DOC-1391518bc62d",
+    "DOC-a50c6b9e443d",
+    "DOC-686121b3b392",
+    "DOC-c9d4fc3bb370",
+    "DOC-e96e7f09af49",
+    "DOC-c21c2ea3881f",
+    "DOC-f180383827bf"
+  ],
+  "coverage_notes": {
+    "DOC-9b7f304a0986": "Largest CSV in the observed corpus.",
+    "DOC-2d7c54534744": "Largest observed PDF by character count.",
+    "DOC-0803e0a6caca": "Large PDF with tens of thousands of lines.",
+    "DOC-81edf5b917c4": "Large PDF with more than eighty thousand lines.",
+    "DOC-a50c6b9e443d": "Ambiguous-language tabular case.",
+    "DOC-f180383827bf": "English JSON document with a very long unit."
+  }
+}

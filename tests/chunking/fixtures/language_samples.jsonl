@@ -1,0 +1,30 @@
+{"sample_id":"ES-001","expected_language":"es","text":"El informe analiza los resultados de la encuesta. Además, explica por qué las diferencias deben revisarse con cuidado."}
+{"sample_id":"ES-002","expected_language":"es","text":"La paciente recibió el tratamiento y después volvió a la consulta. Aunque mejoró, todavía necesita seguimiento médico."}
+{"sample_id":"ES-003","expected_language":"es","text":"¿Llegaste a tiempo? Sí, pero el autobús tardó mucho porque había tráfico en la avenida."}
+{"sample_id":"ES-004","expected_language":"es","text":"La aplicación guarda los cambios, valida cada campo y muestra un aviso cuando la información está incompleta."}
+{"sample_id":"ES-005","expected_language":"es","text":"Durante la reunión, el equipo comparó varias propuestas. Finalmente eligió la opción que ofrecía mayor seguridad."}
+{"sample_id":"ES-006","expected_language":"es","text":"El bosque conserva especies nativas y también protege las fuentes de agua que abastecen a las comunidades cercanas."}
+{"sample_id":"ES-007","expected_language":"es","text":"La receta lleva harina, huevos y leche. Después de mezclar todo, debes hornear la masa durante treinta minutos."}
+{"sample_id":"ES-008","expected_language":"es","text":"La investigadora escribió “peer review” en su presentación, pero el resto del análisis y las conclusiones están en español."}
+{"sample_id":"ES-009","expected_language":"es","text":"No sé si mañana podremos salir; sin embargo, ya compramos los boletos y preparamos todo lo necesario para el viaje."}
+{"sample_id":"ES-010","expected_language":"es","text":"Los sensores registran la temperatura cada minuto. Cuando el valor supera el límite, el sistema genera una alerta."}
+{"sample_id":"EN-001","expected_language":"en","text":"The report compares the survey results and explains why every difference should be reviewed carefully."}
+{"sample_id":"EN-002","expected_language":"en","text":"The patient received treatment and returned to the clinic. Although she improved, she still needs medical follow-up."}
+{"sample_id":"EN-003","expected_language":"en","text":"Did you arrive on time? Yes, but the bus was late because there was heavy traffic downtown."}
+{"sample_id":"EN-004","expected_language":"en","text":"The application saves each change, validates every field, and displays a warning when information is incomplete."}
+{"sample_id":"EN-005","expected_language":"en","text":"During the meeting, the team compared several proposals. Finally, they selected the option with better security."}
+{"sample_id":"EN-006","expected_language":"en","text":"The forest supports native species and also protects the water sources that supply nearby communities."}
+{"sample_id":"EN-007","expected_language":"en","text":"The recipe uses flour, eggs, and milk. After mixing everything, bake the dough for thirty minutes."}
+{"sample_id":"EN-008","expected_language":"en","text":"The researcher included “revisión técnica” on one slide, but the analysis and conclusions were written in English."}
+{"sample_id":"EN-009","expected_language":"en","text":"I don't know whether we can leave tomorrow; however, we already bought tickets and packed everything for the trip."}
+{"sample_id":"EN-010","expected_language":"en","text":"The sensors record temperature every minute. When a value exceeds the limit, the system creates an alert."}
+{"sample_id":"PT-001","expected_language":"pt","text":"O relatório compara os resultados da pesquisa e explica por que as diferenças devem ser revistas com cuidado."}
+{"sample_id":"PT-002","expected_language":"pt","text":"A paciente recebeu o tratamento e voltou à consulta. Embora tenha melhorado, ainda precisa de acompanhamento médico."}
+{"sample_id":"PT-003","expected_language":"pt","text":"Você chegou a tempo? Sim, mas o ônibus demorou porque havia muito trânsito no centro."}
+{"sample_id":"PT-004","expected_language":"pt","text":"A aplicação guarda as alterações, valida cada campo e mostra um aviso quando a informação está incompleta."}
+{"sample_id":"PT-005","expected_language":"pt","text":"Durante a reunião, a equipe comparou várias propostas. Finalmente escolheu a opção que oferecia mais segurança."}
+{"sample_id":"PT-006","expected_language":"pt","text":"A floresta conserva espécies nativas e também protege as fontes de água que abastecem as comunidades próximas."}
+{"sample_id":"PT-007","expected_language":"pt","text":"A receita leva farinha, ovos e leite. Depois de misturar tudo, asse a massa durante trinta minutos."}
+{"sample_id":"PT-008","expected_language":"pt","text":"A pesquisadora escreveu “technical review” no slide, mas toda a análise e as conclusões estavam em português."}
+{"sample_id":"PT-009","expected_language":"pt","text":"Não sei se poderemos sair amanhã; porém, já compramos as passagens e preparamos tudo para a viagem."}
+{"sample_id":"PT-010","expected_language":"pt","text":"Os sensores registram a temperatura a cada minuto. Quando o valor ultrapassa o limite, o sistema gera um alerta."}

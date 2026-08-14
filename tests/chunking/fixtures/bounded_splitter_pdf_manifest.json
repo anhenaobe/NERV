@@ -1,0 +1,31 @@
+{
+  "schema_version": 2,
+  "description": "Checkpointed splitter-only PDF selection ordered from small to extreme, covering detected ES, EN, and PT.",
+  "source_path": "outputs/resultados/documentos.jsonl",
+  "documents": [
+    {
+      "doc_id": "DOC-953b7532f1b5",
+      "size_class": "small"
+    },
+    {
+      "doc_id": "DOC-6f41290186a5",
+      "size_class": "small"
+    },
+    {
+      "doc_id": "DOC-8bd1aaf3c8d9",
+      "size_class": "medium"
+    },
+    {
+      "doc_id": "DOC-6891a760adbe",
+      "size_class": "medium"
+    },
+    {
+      "doc_id": "DOC-83e80067468b",
+      "size_class": "large"
+    },
+    {
+      "doc_id": "DOC-2d7c54534744",
+      "size_class": "extreme"
+    }
+  ]
+}

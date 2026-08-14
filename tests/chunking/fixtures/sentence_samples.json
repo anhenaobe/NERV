@@ -1,0 +1,92 @@
+[
+  {
+    "sample_id": "ES-S01",
+    "language": "es",
+    "text": "El informe está listo. La revisión continúa.",
+    "expected_sentences": ["El informe está listo.", "La revisión continúa."]
+  },
+  {
+    "sample_id": "ES-S02",
+    "language": "es",
+    "text": "El Dr. Pérez midió 3.14 puntos. ¿Terminó el ensayo?",
+    "expected_sentences": ["El Dr. Pérez midió 3.14 puntos.", "¿Terminó el ensayo?"]
+  },
+  {
+    "sample_id": "ES-S03",
+    "language": "es",
+    "text": "¡El sistema respondió! Después guardó el registro.",
+    "expected_sentences": ["¡El sistema respondió!", "Después guardó el registro."]
+  },
+  {
+    "sample_id": "ES-S04",
+    "language": "es",
+    "text": "Primer párrafo completo.\n\nSegundo párrafo activo. Tercera etapa",
+    "expected_sentences": ["Primer párrafo completo.", "Segundo párrafo activo.", "Tercera etapa"]
+  },
+  {
+    "sample_id": "ES-S05",
+    "language": "es",
+    "text": "La versión 2.5 funciona. La Sra. Gómez confirmó el resultado.",
+    "expected_sentences": ["La versión 2.5 funciona.", "La Sra. Gómez confirmó el resultado."]
+  },
+  {
+    "sample_id": "EN-S01",
+    "language": "en",
+    "text": "The report is ready. The review continues.",
+    "expected_sentences": ["The report is ready.", "The review continues."]
+  },
+  {
+    "sample_id": "EN-S02",
+    "language": "en",
+    "text": "Dr. Smith measured 3.14 points. Did the test finish?",
+    "expected_sentences": ["Dr. Smith measured 3.14 points.", "Did the test finish?"]
+  },
+  {
+    "sample_id": "EN-S03",
+    "language": "en",
+    "text": "Don't close the service. It is still processing data.",
+    "expected_sentences": ["Don't close the service.", "It is still processing data."]
+  },
+  {
+    "sample_id": "EN-S04",
+    "language": "en",
+    "text": "The first paragraph ends here.\n\nThe next one starts now. Final stage",
+    "expected_sentences": ["The first paragraph ends here.", "The next one starts now.", "Final stage"]
+  },
+  {
+    "sample_id": "EN-S05",
+    "language": "en",
+    "text": "The value reached 8.75 units. The system remained stable!",
+    "expected_sentences": ["The value reached 8.75 units.", "The system remained stable!"]
+  },
+  {
+    "sample_id": "PT-S01",
+    "language": "pt",
+    "text": "O relatório está pronto. A revisão continua.",
+    "expected_sentences": ["O relatório está pronto.", "A revisão continua."]
+  },
+  {
+    "sample_id": "PT-S02",
+    "language": "pt",
+    "text": "O Dr. Almeida falou com a Sra. Costa. A comissão respondeu.",
+    "expected_sentences": ["O Dr. Almeida falou com a Sra. Costa.", "A comissão respondeu."]
+  },
+  {
+    "sample_id": "PT-S03",
+    "language": "pt",
+    "text": "A taxa chegou a 3.14 pontos. O sistema ficou estável?",
+    "expected_sentences": ["A taxa chegou a 3.14 pontos.", "O sistema ficou estável?"]
+  },
+  {
+    "sample_id": "PT-S04",
+    "language": "pt",
+    "text": "O serviço processa dados, logs, etc. Depois envia o resultado.",
+    "expected_sentences": ["O serviço processa dados, logs, etc.", "Depois envia o resultado."]
+  },
+  {
+    "sample_id": "PT-S05",
+    "language": "pt",
+    "text": "O sensor usa TLS. A conexão permanece ativa",
+    "expected_sentences": ["O sensor usa TLS.", "A conexão permanece ativa"]
+  }
+]

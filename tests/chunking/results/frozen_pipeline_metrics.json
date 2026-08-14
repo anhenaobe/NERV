@@ -1,0 +1,588 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-31T20:59:34.546810+00:00",
+  "evaluation_mode": "real_tokenizer_synthetic_pipeline",
+  "corpus_type": "synthetic",
+  "encoder_model_name": "intfloat/multilingual-e5-small",
+  "tokenizer_class": "XLMRobertaTokenizer",
+  "tokenizer_revision": null,
+  "embedding_dimension": 384,
+  "document_prefix": "passage: ",
+  "add_special_tokens": false,
+  "chunk_max_tokens": 256,
+  "overlap_target_tokens": 32,
+  "document_count": 30,
+  "document_count_by_language": {
+    "en": 10,
+    "es": 10,
+    "pt": 10
+  },
+  "sentence_count": 108,
+  "chunk_count": 31,
+  "chunks_per_document": 1.0333333333333334,
+  "minimum_tokens_per_chunk": 22,
+  "maximum_tokens_per_chunk": 438,
+  "average_tokens_per_chunk": 54.54838709677419,
+  "median_tokens_per_chunk": 33,
+  "token_count_standard_deviation": 80.39292165506397,
+  "percentile_25": 30.5,
+  "percentile_75": 36.0,
+  "percentile_90": 47.0,
+  "chunk_limit_utilization_rate": 0.2130796370967742,
+  "chunks_exceeding_limit_count": 1,
+  "oversized_sentence_chunk_count": 1,
+  "cut_sentence_count": 0,
+  "lost_sentence_count": 0,
+  "empty_chunk_count": 0,
+  "configured_overlap_tokens": 32,
+  "average_actual_overlap_tokens": 24.0,
+  "minimum_actual_overlap_tokens": 24,
+  "maximum_actual_overlap_tokens": 24,
+  "duplicated_token_estimate": 24,
+  "duplicated_content_rate": 0.014192785334121822,
+  "deterministic_output": true,
+  "processing_duration_seconds": 0.18686756000388413,
+  "documents_per_second": 160.54150864589036,
+  "sentences_per_second": 577.9494311252053,
+  "chunks_per_second": 165.89289226742005,
+  "input_size_bytes": 10232,
+  "output_size_bytes": 12395,
+  "output_to_input_size_ratio": 1.2113956215793589,
+  "dataset": {
+    "kind": "synthetic",
+    "document_count": 30,
+    "languages": {
+      "en": 10,
+      "es": 10,
+      "pt": 10
+    },
+    "input_bytes": 10232
+  },
+  "configuration": {
+    "encoder_model_name": "intfloat/multilingual-e5-small",
+    "embedding_dimension": 384,
+    "chunk_max_tokens": 256,
+    "overlap_tokens": 32,
+    "document_prefix": "passage: ",
+    "query_prefix": "query: ",
+    "add_special_tokens": false,
+    "normalize_embeddings": true,
+    "normalization_method": "l2",
+    "future_similarity_metric": "inner_product",
+    "future_faiss_index": "IndexFlatIP",
+    "oversized_sentence_policy": "preserve_complete_sentence",
+    "tokenizer_class": "XLMRobertaTokenizer",
+    "tokenizer_revision": null
+  },
+  "pipeline": {
+    "sentence_count": 108,
+    "chunk_count": 31,
+    "chunks_by_language": {
+      "en": 11,
+      "es": 10,
+      "pt": 10
+    },
+    "empty_chunk_count": 0,
+    "cut_sentence_count": 0,
+    "lost_sentence_count": 0,
+    "oversized_sentence_chunk_count": 1,
+    "token_count": {
+      "minimum": 22,
+      "maximum": 438,
+      "mean": 54.54838709677419,
+      "median": 33,
+      "p95": 164.0,
+      "p99": 382.1999999999999
+    },
+    "actual_overlap_tokens": {
+      "pair_count": 1,
+      "minimum": 24,
+      "maximum": 24,
+      "mean": 24.0,
+      "values": [
+        24
+      ]
+    },
+    "duplicated_token_estimate": 24,
+    "duplicated_content_rate": 0.014192785334121822,
+    "deterministic_across_measured_repetitions": true,
+    "input_output_size_ratio": 1.2113956215793589,
+    "output_bytes": 12395
+  },
+  "detector": {
+    "ambiguous_count": 4,
+    "selected_language_accuracy": 0.8666666666666667,
+    "cases": [
+      {
+        "doc_id": "SYN-ES-001",
+        "expected": "es",
+        "selected": "es",
+        "ambiguous": false,
+        "confidence": 0.5909090909090909,
+        "margin": 4.0
+      },
+      {
+        "doc_id": "SYN-ES-002",
+        "expected": "es",
+        "selected": "es",
+        "ambiguous": false,
+        "confidence": 0.7666666666666667,
+        "margin": 9.5
+      },
+      {
+        "doc_id": "SYN-ES-003",
+        "expected": "es",
+        "selected": "es",
+        "ambiguous": false,
+        "confidence": 0.6153846153846154,
+        "margin": 2.0
+      },
+      {
+        "doc_id": "SYN-ES-004",
+        "expected": "es",
+        "selected": "es",
+        "ambiguous": false,
+        "confidence": 1.0,
+        "margin": 7.0
+      },
+      {
+        "doc_id": "SYN-ES-005",
+        "expected": "es",
+        "selected": "es",
+        "ambiguous": true,
+        "confidence": 0.8333333333333334,
+        "margin": 2.0
+      },
+      {
+        "doc_id": "SYN-ES-006",
+        "expected": "es",
+        "selected": "es",
+        "ambiguous": false,
+        "confidence": 1.0,
+        "margin": 3.5
+      },
+      {
+        "doc_id": "SYN-ES-007",
+        "expected": "es",
+        "selected": "es",
+        "ambiguous": false,
+        "confidence": 0.7272727272727273,
+        "margin": 6.5
+      },
+      {
+        "doc_id": "SYN-ES-008",
+        "expected": "es",
+        "selected": "es",
+        "ambiguous": false,
+        "confidence": 0.9375,
+        "margin": 7.0
+      },
+      {
+        "doc_id": "SYN-ES-009",
+        "expected": "es",
+        "selected": "es",
+        "ambiguous": false,
+        "confidence": 1.0,
+        "margin": 5.5
+      },
+      {
+        "doc_id": "SYN-ES-010",
+        "expected": "es",
+        "selected": "es",
+        "ambiguous": false,
+        "confidence": 0.7293577981651376,
+        "margin": 56.0
+      },
+      {
+        "doc_id": "SYN-EN-001",
+        "expected": "en",
+        "selected": "en",
+        "ambiguous": false,
+        "confidence": 0.9333333333333333,
+        "margin": 13.5
+      },
+      {
+        "doc_id": "SYN-EN-002",
+        "expected": "en",
+        "selected": "en",
+        "ambiguous": false,
+        "confidence": 1.0,
+        "margin": 18.5
+      },
+      {
+        "doc_id": "SYN-EN-003",
+        "expected": "en",
+        "selected": "en",
+        "ambiguous": false,
+        "confidence": 0.9166666666666666,
+        "margin": 5.0
+      },
+      {
+        "doc_id": "SYN-EN-004",
+        "expected": "en",
+        "selected": "en",
+        "ambiguous": false,
+        "confidence": 0.9259259259259259,
+        "margin": 12.0
+      },
+      {
+        "doc_id": "SYN-EN-005",
+        "expected": "en",
+        "selected": "en",
+        "ambiguous": false,
+        "confidence": 0.8260869565217391,
+        "margin": 8.5
+      },
+      {
+        "doc_id": "SYN-EN-006",
+        "expected": "en",
+        "selected": "en",
+        "ambiguous": false,
+        "confidence": 1.0,
+        "margin": 8.0
+      },
+      {
+        "doc_id": "SYN-EN-007",
+        "expected": "en",
+        "selected": "en",
+        "ambiguous": false,
+        "confidence": 0.9166666666666666,
+        "margin": 10.5
+      },
+      {
+        "doc_id": "SYN-EN-008",
+        "expected": "en",
+        "selected": "en",
+        "ambiguous": false,
+        "confidence": 1.0,
+        "margin": 7.5
+      },
+      {
+        "doc_id": "SYN-EN-009",
+        "expected": "en",
+        "selected": "en",
+        "ambiguous": false,
+        "confidence": 0.9259259259259259,
+        "margin": 12.0
+      },
+      {
+        "doc_id": "SYN-EN-010",
+        "expected": "en",
+        "selected": "en",
+        "ambiguous": false,
+        "confidence": 0.8333333333333334,
+        "margin": 56.0
+      },
+      {
+        "doc_id": "SYN-PT-001",
+        "expected": "pt",
+        "selected": "pt",
+        "ambiguous": false,
+        "confidence": 0.6060606060606061,
+        "margin": 4.5
+      },
+      {
+        "doc_id": "SYN-PT-002",
+        "expected": "pt",
+        "selected": "es",
+        "ambiguous": true,
+        "confidence": 0.45,
+        "margin": 0.0
+      },
+      {
+        "doc_id": "SYN-PT-003",
+        "expected": "pt",
+        "selected": "pt",
+        "ambiguous": false,
+        "confidence": 0.7857142857142857,
+        "margin": 4.5
+      },
+      {
+        "doc_id": "SYN-PT-004",
+        "expected": "pt",
+        "selected": "pt",
+        "ambiguous": false,
+        "confidence": 0.6666666666666666,
+        "margin": 4.5
+      },
+      {
+        "doc_id": "SYN-PT-005",
+        "expected": "pt",
+        "selected": "pt",
+        "ambiguous": false,
+        "confidence": 0.7857142857142857,
+        "margin": 4.5
+      },
+      {
+        "doc_id": "SYN-PT-006",
+        "expected": "pt",
+        "selected": "pt",
+        "ambiguous": false,
+        "confidence": 0.6666666666666666,
+        "margin": 4.5
+      },
+      {
+        "doc_id": "SYN-PT-007",
+        "expected": "pt",
+        "selected": "pt",
+        "ambiguous": false,
+        "confidence": 0.6666666666666666,
+        "margin": 3.5
+      },
+      {
+        "doc_id": "SYN-PT-008",
+        "expected": "pt",
+        "selected": "es",
+        "ambiguous": true,
+        "confidence": 0.47368421052631576,
+        "margin": 1.5
+      },
+      {
+        "doc_id": "SYN-PT-009",
+        "expected": "pt",
+        "selected": "es",
+        "ambiguous": true,
+        "confidence": 0.5,
+        "margin": 0.5
+      },
+      {
+        "doc_id": "SYN-PT-010",
+        "expected": "pt",
+        "selected": "es",
+        "ambiguous": false,
+        "confidence": 0.6153846153846154,
+        "margin": 1.5
+      }
+    ]
+  },
+  "performance": {
+    "warm_up_runs": 1,
+    "tokenizer_cold_load_seconds_without_download": 3.980573499997263,
+    "measured_repetitions": 5,
+    "durations_seconds": [
+      0.15361370000755414,
+      0.19068610000249464,
+      0.19633030000841245,
+      0.19099439999263268,
+      0.20271330000832677
+    ],
+    "mean_seconds": 0.18686756000388413,
+    "median_seconds": 0.19099439999263268,
+    "min_seconds": 0.15361370000755414,
+    "max_seconds": 0.20271330000832677,
+    "standard_deviation_seconds": 0.017193383525943535,
+    "mean_documents_per_second": 160.54150864589036,
+    "mean_chunks_per_second": 165.89289226742005
+  },
+  "embedding_storage_theoretical": {
+    "dtype": "float32",
+    "bytes_per_embedding": 1536,
+    "current_chunk_count_bytes": 47616,
+    "1k_chunks_bytes": 1536000,
+    "10k_chunks_bytes": 15360000,
+    "100k_chunks_bytes": 153600000,
+    "1m_chunks_bytes": 1536000000,
+    "scope": "raw vectors only; excludes index and metadata overhead"
+  },
+  "environment": {
+    "python": "3.12.13 (main, Mar  3 2026, 15:01:35) [MSC v.1944 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "machine": "AMD64",
+    "processor": "Intel64 Family 6 Model 151 Stepping 2, GenuineIntel",
+    "available_ram_bytes": null,
+    "available_ram_note": "Not queried without adding a platform dependency.",
+    "packages": {
+      "nerv": "0.1.0",
+      "transformers": "5.14.1",
+      "tokenizers": "0.22.2",
+      "sentencepiece": "0.2.2",
+      "pysbd": "0.3.4"
+    }
+  },
+  "baseline_detector_splitter": {
+    "source": "chunking_metrics.json",
+    "detector": {
+      "sample_count": 30,
+      "accuracy": 0.9666666666666667,
+      "confusion_matrix": {
+        "es": {
+          "es": 10,
+          "en": 0,
+          "pt": 0
+        },
+        "en": {
+          "es": 0,
+          "en": 10,
+          "pt": 0
+        },
+        "pt": {
+          "es": 1,
+          "en": 0,
+          "pt": 9
+        }
+      },
+      "ambiguous_rate": 0.03333333333333333,
+      "average_confidence": 0.8246870454092574,
+      "average_margin": 8.133333333333333,
+      "by_language": {
+        "es": {
+          "total": 10,
+          "accuracy": 1.0,
+          "ambiguous_rate": 0.0,
+          "average_confidence": 0.8581374181374182,
+          "average_margin": 6.9
+        },
+        "en": {
+          "total": 10,
+          "accuracy": 1.0,
+          "ambiguous_rate": 0.0,
+          "average_confidence": 0.9843076923076923,
+          "average_margin": 11.95
+        },
+        "pt": {
+          "total": 10,
+          "accuracy": 0.9,
+          "ambiguous_rate": 0.1,
+          "average_confidence": 0.6316160257826616,
+          "average_margin": 5.55
+        }
+      }
+    },
+    "splitter": {
+      "case_count": 15,
+      "exact_match_rate": 1.0,
+      "boundary_precision": 1.0,
+      "boundary_recall": 1.0,
+      "boundary_f1": 1.0,
+      "content_loss_rate": 0.0,
+      "lost_character_count": 0,
+      "by_language": {
+        "es": {
+          "case_count": 5,
+          "exact_match_rate": 1.0,
+          "boundary_precision": 1.0,
+          "boundary_recall": 1.0,
+          "boundary_f1": 1.0,
+          "content_loss_rate": 0.0,
+          "lost_character_count": 0
+        },
+        "en": {
+          "case_count": 5,
+          "exact_match_rate": 1.0,
+          "boundary_precision": 1.0,
+          "boundary_recall": 1.0,
+          "boundary_f1": 1.0,
+          "content_loss_rate": 0.0,
+          "lost_character_count": 0
+        },
+        "pt": {
+          "case_count": 5,
+          "exact_match_rate": 1.0,
+          "boundary_precision": 1.0,
+          "boundary_recall": 1.0,
+          "boundary_f1": 1.0,
+          "content_loss_rate": 0.0,
+          "lost_character_count": 0
+        }
+      }
+    }
+  },
+  "language_detector_metrics": {
+    "sample_count": 30,
+    "accuracy": 0.9666666666666667,
+    "confusion_matrix": {
+      "es": {
+        "es": 10,
+        "en": 0,
+        "pt": 0
+      },
+      "en": {
+        "es": 0,
+        "en": 10,
+        "pt": 0
+      },
+      "pt": {
+        "es": 1,
+        "en": 0,
+        "pt": 9
+      }
+    },
+    "ambiguous_rate": 0.03333333333333333,
+    "average_confidence": 0.8246870454092574,
+    "average_margin": 8.133333333333333,
+    "by_language": {
+      "es": {
+        "total": 10,
+        "accuracy": 1.0,
+        "ambiguous_rate": 0.0,
+        "average_confidence": 0.8581374181374182,
+        "average_margin": 6.9
+      },
+      "en": {
+        "total": 10,
+        "accuracy": 1.0,
+        "ambiguous_rate": 0.0,
+        "average_confidence": 0.9843076923076923,
+        "average_margin": 11.95
+      },
+      "pt": {
+        "total": 10,
+        "accuracy": 0.9,
+        "ambiguous_rate": 0.1,
+        "average_confidence": 0.6316160257826616,
+        "average_margin": 5.55
+      }
+    }
+  },
+  "sentence_splitter_metrics": {
+    "case_count": 15,
+    "exact_match_rate": 1.0,
+    "boundary_precision": 1.0,
+    "boundary_recall": 1.0,
+    "boundary_f1": 1.0,
+    "content_loss_rate": 0.0,
+    "lost_character_count": 0,
+    "by_language": {
+      "es": {
+        "case_count": 5,
+        "exact_match_rate": 1.0,
+        "boundary_precision": 1.0,
+        "boundary_recall": 1.0,
+        "boundary_f1": 1.0,
+        "content_loss_rate": 0.0,
+        "lost_character_count": 0
+      },
+      "en": {
+        "case_count": 5,
+        "exact_match_rate": 1.0,
+        "boundary_precision": 1.0,
+        "boundary_recall": 1.0,
+        "boundary_f1": 1.0,
+        "content_loss_rate": 0.0,
+        "lost_character_count": 0
+      },
+      "pt": {
+        "case_count": 5,
+        "exact_match_rate": 1.0,
+        "boundary_precision": 1.0,
+        "boundary_recall": 1.0,
+        "boundary_f1": 1.0,
+        "content_loss_rate": 0.0,
+        "lost_character_count": 0
+      }
+    }
+  },
+  "failures": {
+    "lost_sentences": [],
+    "cut_sentences": []
+  },
+  "pipeline_validation_failures": 0,
+  "failed_cases": [],
+  "limitations": [
+    "The 30 documents are synthetic and do not represent the CODEFEST corpus.",
+    "No encoder weights, embeddings, FAISS index, retrieval, or agents were run.",
+    "Theoretical storage excludes index structures and metadata.",
+    "Portuguese currently uses the Spanish PySBD rules.",
+    "Tokenizer cache revision is not pinned to a commit hash."
+  ]
+}

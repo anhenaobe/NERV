@@ -1,0 +1,9 @@
+"""Contracts for building normalized document records."""
+
+from pathlib import Path
+from typing import Any
+
+
+def build_document(path: Path, text: str) -> dict[str, Any]:
+    """Build a document record from source text and its relative path."""
+    raise NotImplementedError

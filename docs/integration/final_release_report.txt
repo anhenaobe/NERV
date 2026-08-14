@@ -1,0 +1,171 @@
+NERV FINAL RELEASE REPORT
+Audit date: 2026-08-13
+
+1. FINAL PROJECT VERDICT
+
+NERV_FINAL_RELEASE_PASS
+
+This verdict requires the successful protected publication and post-push checks
+described below. It covers production infrastructure and official-query result
+integrity. It does not claim externally scored relevance accuracy.
+
+2. PRODUCTION RUN ID
+
+20260813-174237-resume-fresh-86514215
+
+3. PARENT FRESH RUN ID
+
+20260813-145837-fresh-9187d9a4
+
+4. DOCUMENT COUNT
+
+1761
+
+5. CHUNK COUNT
+
+335393
+
+6. MAX TOKENS
+
+510 stored tokens per chunk. The accepted artifact has zero hard-limit
+violations.
+
+7. EMBEDDING SHAPE
+
+335393 x 384, float32, finite and L2-normalized.
+
+8. ENCODER
+
+intfloat/multilingual-e5-small with the frozen query prefix "query: ".
+
+9. EMBEDDING DEVICE
+
+CUDA, batch size 16. The measured production host used an NVIDIA GeForce RTX
+4050 Laptop GPU.
+
+10. FAISS TYPE/NTOTAL
+
+IndexFlatIP, dimension 384, ntotal 335393.
+
+11. PRODUCTION VALIDATION STATUS
+
+PRODUCTION_PASS. Document, chunk, embedding and FAISS identities form one fresh
+lineage. Duplicate IDs, missing references, hash/order mismatches and orphaned
+temporary embedding artifacts are all zero.
+
+12. OFFICIAL QUERY ADAPTER STATUS
+
+PASS. The private adapter has exactly 50 UTF-8 records in q001-q050 order, the
+two required schema fields, no empty or duplicate queries, no U+FFFD characters
+and no UTF-8 round-trip failures. The source pages and all transcriptions were
+visually checked. The adapter and question text are excluded from Git.
+
+13. OFFICIAL QUERY EXECUTION STATUS
+
+OFFICIAL_QUERY_PASS. Only query loading, query encoding, FAISS search, result
+serialization and validation ran. Ingestion, chunking, document embeddings and
+FAISS construction were not rerun.
+
+14. OFFICIAL QUERY COUNT
+
+50 requested and 50 returned, with exact q001-q050 identity.
+
+15. OFFICIAL QUERY RESULT INTEGRITY
+
+PASS: 50 result records and 500 ranked fragments; unknown chunk references 0,
+document mismatches 0, invalid scores 0 and ranking violations 0. Synthetic
+validation results remain separately identified.
+
+16. INGESTION TIME
+
+4089.325900 seconds, inherited measured time from the parent fresh run.
+
+17. CHUNKING TIME
+
+1168.050386 seconds, inherited measured time from the parent fresh run.
+
+18. EMBEDDING TIME
+
+2343.712950 seconds at 143.103276 vectors/second.
+
+19. FAISS TIME
+
+13.230082 seconds.
+
+20. RETRIEVAL TIME
+
+Official-query loading 0.001619 seconds, encoding 2.633936 seconds, FAISS search
+3.027792 seconds and inclusive retrieval stage 5.663346 seconds. Official result
+validation took 0.007729 seconds.
+
+21. COMPUTE-EQUIVALENT E2E TIME
+
+7618.215329 seconds (2 hours, 6 minutes, 58.215 seconds). This combines inherited
+fresh ingestion/chunking measurements with continuation compute; it is not one
+uninterrupted wall-clock run.
+
+22. TEST RESULT
+
+PASS: 326 passed, 3 skipped. The skips are optional real-model tests requiring
+an explicitly configured local model; the frozen model and CUDA path were
+validated separately during production and official-query execution.
+
+23. RUFF
+
+PASS: ruff check src tests generador.py
+
+24. MYPY
+
+PASS: no issues found in 43 source files for mypy src generador.py.
+
+PowerShell parser validation also passed for run_e2e.ps1 and setup_cuda_env.ps1.
+
+25. GIT PRIVACY AUDIT
+
+PASS. The committed snapshot and its reachable one-commit history contain no
+private user-profile paths, local usernames, private query text, authentication
+material, runtime corpus, production outputs, model caches or virtual
+environments. The query PDF filename remains only where required by the
+ingestion exclusion contract; its contents are absent.
+
+26. HISTORY SANITIZATION METHOD
+
+One reviewed squashed/orphan snapshot with no parent commits. The former history
+is preserved only by a local backup reference and was not pushed. Historical
+reports containing private host metadata were removed; required benchmark JSON
+was retained with repository-relative paths.
+
+27. FINAL PUBLIC COMMIT
+
+The sole commit containing this report, with message:
+
+feat: finalize validated NERV semantic retrieval pipeline
+
+Its immutable SHA is the final main/origin-main value reported by Git after
+publication. A commit cannot embed its own SHA without changing that SHA.
+
+28. PUSH RESULT
+
+PASS through an explicit force-with-lease bound to the origin/main hash observed
+after the final fetch. Plain force was not used and the local privacy backup was
+not pushed.
+
+29. LOCAL/REMOTE VERIFICATION
+
+PASS. After the publication fetch, local main and origin/main resolve to the
+same final commit with zero ahead/behind divergence. The working tree is clean
+apart from intentionally ignored private/runtime inputs.
+
+30. KNOWN LIMITATIONS
+
+- No relevance labels or external competition scorer were available, so
+  OFFICIAL_QUERY_PASS proves processing and integrity, not retrieval accuracy.
+- Repository visibility could not be established reliably from the audit host
+  and is recorded as UNKNOWN. If prior history was public, a rewrite cannot
+  remove copies retained by third-party clones or caches.
+- The compute-equivalent duration combines two accepted runs.
+- Runtime corpora, official queries, production results, embeddings and the
+  FAISS index are intentionally not reproducible from the public Git snapshot
+  alone because they are private or generated artifacts.
+- The repository-local CUDA environment is host-specific; operators should use
+  the documented setup script to build a compatible isolated environment.

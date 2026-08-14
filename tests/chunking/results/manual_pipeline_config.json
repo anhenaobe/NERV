@@ -1,0 +1,22 @@
+{
+  "encoder_model_name": "intfloat/multilingual-e5-small",
+  "tokenizer_revision": null,
+  "tokenizer_class": "XLMRobertaTokenizer",
+  "use_fast": true,
+  "trust_remote_code": false,
+  "add_special_tokens": false,
+  "document_prefix": "passage: ",
+  "local_files_only": true,
+  "reported_model_max_length": 512,
+  "chunk_max_tokens": 256,
+  "overlap_tokens": 32,
+  "oversized_sentence_policy": "preserve_complete_sentence",
+  "language_detector": "nerv.chunking.language_detector.detect_language",
+  "splitter_backend_by_language": {
+    "es": "es",
+    "en": "en",
+    "pt": "es"
+  },
+  "generated_at": "2026-07-31T21:02:14.624020+00:00",
+  "code_version": "0.1.0"
+}

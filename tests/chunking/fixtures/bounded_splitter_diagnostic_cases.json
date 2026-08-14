@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "case_id": "large_remote_context_probe",
+      "classification": "block_context_difference",
+      "description": "Sanitized local structure at the first large-PDF divergence. Local whole and bounded runs agree, proving that the full-document difference requires remote context rather than a carry transition.",
+      "language": "en",
+      "text": "Revision summary\n� Added information about a follow-on program (01-42)\n� Added a reorganization note (01-44)\n� Discussed an executive order, �Ensuring\nSpace Superiority� (01-46)\n� Added the capstone operations document, Example Doctrine\nDocument (ED)-1 (01-53)\n� Added the warfighting framework (01-53)\n"
+    },
+    {
+      "case_id": "extreme_ocr_separator_probe",
+      "classification": "inherited_pysbd_transformation",
+      "description": "Sanitized OCR punctuation where PySBD creates two items and joining those items inserts a space that was absent in the source.",
+      "language": "en",
+      "text": "SEC. 2. ORGANIZATION OF ACT INTO DIVISIONS; TABLE OF CONTENTS. (a) DIVISIONS.�This Act is organized into four divisions as follows: (1) Division A�Example Authorizations."
+    }
+  ]
+}

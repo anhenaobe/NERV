@@ -1,0 +1,1457 @@
+NERV END-TO-END INTEGRATION AUDIT
+=================================
+
+Audit date: 2026-08-12
+Repository root audited: C:\dev\NERV
+Git state at audit start: branch main, commit 33e7a89, clean worktree
+Audit mode: report only; no production, test, or configuration changes
+
+Evidence labels used throughout:
+FACT FROM CODE   Directly established from the current checkout.
+INFERENCE        Consequence inferred from code and current filesystem state.
+RECOMMENDATION   Proposed future action; not implemented in this audit.
+UNKNOWN          The current checkout does not contain enough evidence.
+
+
+1. EXECUTIVE SUMMARY
+====================
+
+FINAL VERDICT: END_TO_END_NOT_READY.
+
+FACT FROM CODE: The checkout contains two distinct project layouts:
+
+  A. C:\dev\NERV is a production ingestion project. Its executable implementation
+     is src/lector_corpus.py and it writes data/processed/documentos.jsonl plus
+     data/processed/errores.jsonl.
+
+  B. C:\dev\NERV\NERV is a separately packaged semantic retrieval project. It
+     contains chunking, embeddings, FAISS, retrieval, ranking, evaluation, and
+     manual integration scripts, but its own ingestion and preprocessing modules
+     are NotImplementedError placeholders.
+
+FACT FROM CODE: There is no single callable path from the outer ingestion CLI to
+the nested semantic pipeline. The nested project has no corpus/, outputs/, or
+usable production config files in this checkout. Its config/encoder_config.json
+and config/config.yaml are absent.
+
+FACT FROM CODE: The outer documentos.jsonl schema is directly accepted by the
+nested chunking reader. This is the strongest currently compatible boundary.
+
+FACT FROM CODE: The nested chunking implementation emits the eight-field base
+chunk record doc_id, chunk_id, fuente, formato, fenomeno, posicion, num_tokens,
+texto. No hard-split fields or hard-split implementation exist in this checkout.
+The user-provided validated counts and SHA-256 therefore describe an artifact or
+revision that is not present here and cannot be re-established from current code.
+
+FACT FROM CODE: Embedding generation, IndexFlatIP retrieval, query prefixing,
+max-pooling document aggregation, and official result-shape validation have real
+implementations. They are connected only by scripts and positional assumptions.
+
+FACT FROM CODE: Encoder execution conflicts with the expected frozen contract:
+load_encoder forces max_seq_length=256, while the requested hard encoder limit is
+512. SentenceTransformer tokenization is not configured with
+add_special_tokens=false or a tokenizer revision. Any chunk longer than the
+effective 256-token model limit can be truncated during embedding generation.
+
+INFERENCE: A physical embedding job could be attempted after installing packages
+and supplying artifacts, but it would not be a contract-correct full-corpus run.
+The current code cannot safely claim that every one of 336239 vectors represents
+the full validated chunk text.
+
+RECOMMENDATION: First reconcile the checkout and frozen encoder contract, add a
+small manifest-backed chunk-to-embedding adapter, and prove a tiny end-to-end
+fixture before introducing a thin orchestrator.
+
+
+2. FINAL VERDICT
+================
+
+Verdict: END_TO_END_NOT_READY
+
+Why:
+
+  1. No current end-to-end command joins outer ingestion and nested retrieval.
+  2. NERV/config/encoder_config.json is missing and blocks chunking CLI parsing.
+  3. pysbd is imported by chunking but absent from NERV/requirements.txt.
+  4. NERV/config/config.yaml is missing; config.example.yaml contains the
+     placeholder encoder example/model-name.
+  5. No real corpus, documentos.jsonl, chunks.jsonl, queries, embeddings,
+     metadata, or FAISS index exists in this checkout.
+  6. The embedding encoder forces 256 tokens, conflicting with the requested
+     512-token hard encoder limit.
+  7. External embeddings are aligned to chunks only by row count and assumed
+     order; there is no chunk hash/ID manifest at that boundary.
+  8. The only broad integration paths are manual scripts, not a production
+     orchestrator with stage contracts and safe reuse.
+
+Smallest path to a first working run:
+
+  a. Establish one real project root and make the outer ingestion output an
+     explicit input to the packaged NERV project.
+  b. Restore/create the authoritative encoder_config.json from an approved
+     frozen contract and make embeddings consume the same values.
+  c. Declare pysbd and create a real config.yaml without placeholder values.
+  d. Resolve the 256-versus-512 encoder limit and special-token policy.
+  e. Add a streaming chunks-to-embeddings adapter that writes float32 vectors
+     and an alignment manifest containing ordered chunk IDs and source hash.
+  f. Build/load IndexFlatIP only after validating dimension, finite values,
+     normalization, row count, and manifest identity.
+  g. Run a small fixture end to end; only then run the full corpus.
+
+
+3. REPOSITORY COMPONENT INVENTORY
+=================================
+
+3.1 Outer production ingestion project
+
+Path: src/lector_corpus.py
+Status: IMPLEMENTED_AND_CALLABLE, subject to declared libraries and OCR binary.
+Main functions: procesar_corpus, leer_archivo, limpiar_texto,
+generar_fingerprint_archivo, obtener_fenomeno, detectar_idioma, guardar_jsonl,
+main.
+CLI: run src/lector_corpus.py with optional --corpus, --salida, worker, OCR,
+cache, doc-ID, and PBF diagnostic flags.
+Input: recursively scanned raw corpus directory.
+Output: data/processed/documentos.jsonl, data/processed/errores.jsonl, and
+data/cache/lecturas.jsonl by default.
+Configuration: CLI arguments and module constants; no shared NERV config.
+Libraries: beautifulsoup4, openpyxl, PyMuPDF, Pillow, pytesseract; Tesseract is
+an external executable for OCR.
+
+Path: scripts/validar_documentos.py
+Status: IMPLEMENTED_AND_CALLABLE.
+Main functions: validar_documento, validar_jsonl, main.
+Input: documentos.jsonl.
+Output: console validation and process status; no downstream artifact.
+
+Paths: README.md, docs/ingesta.md, COMO_FUNCIONA_EL_CODIGO.txt
+Status: documentation for the outer ingestion project.
+
+3.2 Nested packaged NERV project
+
+Project root: NERV/
+Build/package definition: NERV/pyproject.toml; setuptools src layout; Python
+>=3.12; pytest, Ruff, and strict mypy configuration. No console scripts are
+declared.
+
+Ingestion:
+  NERV/src/nerv/ingestion/readers.py
+  NERV/src/nerv/ingestion/document_builder.py
+  Status: PLACEHOLDER. All public functions raise NotImplementedError.
+
+Preprocessing:
+  NERV/src/nerv/preprocessing/clean_text.py
+  NERV/src/nerv/preprocessing/normalize.py
+  Status: PLACEHOLDER. Both functions raise NotImplementedError.
+
+Chunking:
+  NERV/src/nerv/chunking/pipeline.py
+  NERV/src/nerv/chunking/chunker.py
+  NERV/src/nerv/chunking/sentence_splitter.py
+  NERV/src/nerv/chunking/language_detector.py
+  NERV/src/nerv/chunking/token_counter.py
+  NERV/src/nerv/chunking/configuration.py
+  Status: implementation exists. Function-level API is callable when dependencies
+  and injected configuration are present. CLI is operationally blocked by the
+  missing encoder_config.json and undeclared pysbd dependency.
+
+Embeddings:
+  NERV/src/nerv/embeddings/encoder.py: load_encoder.
+  NERV/src/nerv/embeddings/embedding_generator.py: generate_embeddings.
+  Status: PARTIALLY_IMPLEMENTED for production. It can encode an in-memory text
+  sequence but has no production JSONL loader/writer/manifest contract.
+
+Vector database:
+  NERV/src/nerv/vector_database/build_index.py: build_index.
+  NERV/src/nerv/vector_database/save_index.py: save_index.
+  NERV/src/nerv/vector_database/load_index.py: load_index.
+  Status: IMPLEMENTED_AND_CALLABLE given faiss and valid inputs.
+
+Query/retrieval/ranking:
+  NERV/src/nerv/retrieval/query_encoder.py: encode_query.
+  NERV/src/nerv/retrieval/retriever.py: retrieve.
+  NERV/src/nerv/retrieval/ranking.py: rank_results,
+  deduplicate_by_chunk, aggregate_scores_by_document.
+  Status: IMPLEMENTED_AND_CALLABLE as library functions.
+
+Evaluation:
+  NERV/src/nerv/evaluation/metrics.py: precision_at_k.
+  NERV/src/nerv/evaluation/validator.py: validate_results.
+  NERV/src/nerv/evaluation/contamination.py: contamination detection/filtering.
+  Status: PARTIALLY_IMPLEMENTED. Output-shape validation and one metric exist;
+  no connected ground-truth evaluation pipeline exists.
+
+Manual orchestration:
+  NERV/generador.py: retrieval-only master for a prebuilt index and metadata.
+  NERV/scripts/generador_con_tiempos.py: chunks through embeddings/index/query
+  retrieval, with a full-array checkpoint.
+  NERV/scripts/paso_final_local.py: external embeddings through index/results.
+  NERV/scripts/preparar_para_colab.py: contamination filter and manual Colab handoff.
+  NERV/scripts/comparar_agregacion.py: evaluation/analysis script for two document
+  aggregations on a prebuilt index.
+  NERV/scripts/prueba_rapida.py: MANUAL_SCRIPT_ONLY synthetic smoke path.
+
+Tests:
+  tests/test_ingesta.py: substantial outer ingestion tests.
+  NERV/tests/chunking/: chunking unit and fixture tests.
+  NERV/tests/test_embeddings.py and NERV/tests/test_faiss.py: stale scaffold tests
+  that still expect NotImplementedError although implementations now exist.
+  NERV/tests/test_ingestion.py: correctly documents nested ingestion placeholder.
+
+Generated/vendor areas:
+  FACT FROM CODE: No vendor directory exists. Tracked __pycache__ files exist under
+  NERV/src and NERV/tests; these are generated bytecode and should not be treated
+  as source of truth. No current production artifact directories exist under NERV.
+
+Canonical commands found:
+  Outer tests: .venv\Scripts\python.exe -m pytest -q
+  Nested tests: python -m pytest, configured by NERV/pyproject.toml
+  Nested lint: ruff check src tests
+  Nested formatting check: ruff format --check src tests (inferred from Ruff config)
+  Nested type check: mypy, with files src and generador.py
+  Build: python -m build is conventional but not documented or declared as a
+  repository command; therefore UNKNOWN as canonical build command.
+
+
+4. CURRENT END-TO-END ARCHITECTURE
+=================================
+
+Actual current architecture:
+
+  Raw corpus directory
+    -> outer src/lector_corpus.py::main
+    -> procesar_corpus / format readers / limpiar_texto
+    -> outer data/processed/documentos.jsonl
+
+  MANUAL PATH TRANSFER into nested project
+
+  documentos.jsonl
+    -> NERV/src/nerv/chunking/pipeline.py::main/run_pipeline
+    -> NERV chunks.jsonl plus chunking_config.json and optional metrics
+    -> currently blocked at CLI startup by missing encoder_config.json
+
+  chunks.jsonl
+    -> either NERV/scripts/generador_con_tiempos.py
+       or NERV/scripts/preparar_para_colab.py plus an absent external notebook
+    -> embeddings checkpoint .npy or externally supplied embeddings .npy
+
+  embeddings plus same ordered chunks
+    -> NERV/scripts/paso_final_local.py
+    -> build_index(metric="cosine")
+    -> IndexFlatIP, index.faiss, metadata.jsonl
+
+  queries.jsonl
+    -> load_encoder / encode_query
+    -> retrieve top 50 positions and inner-product scores
+    -> metadata/chunk row lookup
+    -> deduplicate chunks, rank fragments, max-pool documents
+    -> validate_results
+    -> resultados.jsonl
+
+The architecture described above is not a single callable chain. It is a set of
+compatible and partially compatible components joined by manual commands and
+unverified artifact assumptions.
+
+
+5. REAL CALL GRAPH BY STAGE
+===========================
+
+5.1 Ingestion: IMPLEMENTED_AND_CALLABLE in outer root
+
+  src/lector_corpus.py::main
+    -> construir_parser
+    -> procesar_corpus
+       -> sorted(carpeta_corpus.rglob("*"))
+       -> obtener_fenomeno
+       -> _procesar_tareas_en_orden
+          -> _leer_tarea_corpus
+             -> leer_archivo
+             -> format-specific reader
+             -> limpiar_texto
+             -> generar_fingerprint_archivo
+             -> extraer_metadata_archivo
+          -> _registrar_resultado_procesamiento
+             -> detectar_idioma
+             -> append document/error record
+    -> optional resolver_pendientes_ocr
+    -> guardar_jsonl(documentos)
+    -> guardar_jsonl(errores)
+
+Nested NERV ingestion is PLACEHOLDER and is not called by this path.
+
+5.2 Chunking: IMPLEMENTED, CLI BLOCKED IN CURRENT CHECKOUT
+
+  python -m nerv.chunking.pipeline
+    -> main
+    -> parse_args
+       -> load_encoder_config
+       -> FileNotFoundError because NERV/config/encoder_config.json is absent
+
+Intended path after configuration is supplied:
+
+  main -> TokenCounter -> run_pipeline
+    -> read_documents
+    -> validate_document
+    -> _process_document
+       -> split_sentences -> detect_language -> pysbd.Segmenter
+       -> create_chunks
+       -> TokenCounter.count(include_document_prefix=True)
+       -> build_chunk_record
+    -> atomic chunks JSONL writer
+    -> write_chunking_config and optional metrics
+
+5.3 Embeddings: PARTIALLY_IMPLEMENTED / MANUAL_SCRIPT_ONLY
+
+  generador_con_tiempos.py::main
+    -> cargar_chunks (loads all records into memory)
+    -> load_encoder(MODEL_NAME, default device cpu)
+    -> calibrar
+    -> generar_embeddings_con_checkpoint
+       -> prefix each texto with "passage: "
+       -> generate_embeddings
+          -> SentenceTransformer.encode(normalize_embeddings=True,
+             convert_to_numpy=True)
+       -> copy into float32 full-size numpy array
+       -> periodically np.save entire array plus numeric progress file
+
+The library embeddings package has no chunks.jsonl loader, artifact writer,
+metadata writer, source hash, or row-ID manifest.
+
+5.4 FAISS/index creation: IMPLEMENTED_AND_CALLABLE through manual scripts
+
+  paso_final_local.py::main
+    -> cargar_chunks
+    -> np.load(embeddings)
+    -> verify row count only
+    -> build_index(metric="cosine")
+       -> np.asarray(dtype=float32)
+       -> validate 2D and dimension 384
+       -> faiss.IndexFlatIP(384)
+       -> index.add(vectors)
+    -> save_index(index.faiss)
+    -> write every original chunk to metadata.jsonl in current list order
+
+5.5 Query encoding: IMPLEMENTED_AND_CALLABLE
+
+  query record loader in generador.py or script
+    -> text or query field
+    -> encode_query
+       -> strip
+       -> prepend "query: "
+       -> generate_embeddings(batch_size=1, normalized)
+
+5.6 Retrieval/ranking: IMPLEMENTED_AND_CALLABLE given aligned artifacts
+
+  retrieve
+    -> float32 query matrix of shape (1, d)
+    -> index.search(top_k)
+    -> list of (row position, inner-product score)
+  script/generador positional metadata lookup
+    -> deduplicate_by_chunk
+    -> rank_results(fragment top 10)
+    -> aggregate_scores_by_document(max score)
+    -> rank_results(document top 3)
+
+5.7 Evaluation: PARTIALLY_IMPLEMENTED
+
+  validate_results
+    -> requires exactly q001 through q050 in order
+    -> exactly 3 ranked documents and 10 ranked fragments each
+    -> fragment fields chunk_id, doc_id, text
+    -> maximum 250 whitespace words
+
+  precision_at_k exists independently and has no loader, ground-truth schema,
+  CLI, or connection to retrieval output.
+
+
+6. ARTIFACT DEPENDENCY GRAPH
+============================
+
+Actual paths where code defines them:
+
+  User-supplied raw corpus path
+    -> outer src/lector_corpus.py
+    -> C:\dev\NERV\data\processed\documentos.jsonl       NOT PRESENT
+    -> C:\dev\NERV\data\processed\errores.jsonl          NOT PRESENT
+    -> C:\dev\NERV\data\cache\lecturas.jsonl             NOT PRESENT
+
+  documentos.jsonl
+    -> manual --input to nested chunking CLI
+    -> caller-selected chunks.jsonl                         NOT PRESENT
+    -> sibling chunking_config.json                         BLOCKED/MISSING CONFIG
+    -> optional caller-selected pipeline metrics JSON       NOT PRESENT
+
+  chunks.jsonl                                              NOT PRESENT
+    -> optional NERV/corpus/processed/chunks_limpios.jsonl  NOT PRESENT
+    -> optional reporte_contaminacion.json                  NOT PRESENT
+    -> optional estado_pipeline.json                        NOT PRESENT
+    -> embeddings checkpoint or external .npy              NOT PRESENT
+
+  chunks + embeddings.npy
+    -> NERV/entrega/base_vectorial/
+       encoder_multilingual-e5-small/index.faiss             NOT PRESENT
+       encoder_multilingual-e5-small/metadata.jsonl          NOT PRESENT
+    -> NERV/resultados.jsonl or caller-selected output       NOT PRESENT
+
+  Queries expected at NERV/corpus/queries/queries.jsonl      NOT PRESENT
+
+  Full-corpus validated chunks SHA-256 artifact              MISSING_CONTRACT
+  Ordered chunk-ID-to-embedding manifest                    NOT_IMPLEMENTED
+  Embedding source hash/model revision manifest             NOT_IMPLEMENTED
+  End-to-end run manifest                                   NOT_IMPLEMENTED
+
+Tracked test-only artifact:
+
+  NERV/tests/chunking/results/frozen_pipeline_chunks.jsonl
+  contains 31 synthetic chunks and is TEST_ONLY. It is not the stated 336239-row
+  production artifact.
+
+
+7. INGESTION CONTRACT
+=====================
+
+Producer: outer src/lector_corpus.py::_registrar_resultado_procesamiento.
+File type: UTF-8 JSON Lines, one object per line.
+
+Required fields produced:
+  doc_id     String "DOC-" plus first 12 hex characters of SHA-256.
+  fuente     POSIX relative path from corpus root.
+  formato    pdf, html, txt, md, json, csv, xlsx, imagen, or pbf.
+  fenomeno   Integer 1, 2, or 3 derived from an F1_/F2_/F3_ path component.
+  idioma     es, en, pt, or desconocido from a lightweight detector.
+  texto      Cleaned non-empty string.
+
+Optional field:
+  metadata   Object. JSON may contribute metadata.procedencia.urls; images may
+             contribute technical image metadata.
+
+doc_id generation:
+  Default fast mode hashes lowercased relative path, file size, and mtime_ns.
+  --doc-id-contenido hashes lowercased relative path plus complete bytes.
+  Therefore default doc_id is reproducible only while mtime is preserved; moving
+  or touching a file can change it without changing extracted content.
+
+Ordering:
+  Source files are discovered with sorted(corpus.rglob("*")). Parallel results
+  are registered in task order. OCR merge fusion is sorted by fuente. Output is
+  therefore intended to be deterministic for the same inputs, metadata, and mode.
+
+Error behavior:
+  Unsupported/auxiliary files, empty content, OCR-pending files, and failures are
+  written to errores.jsonl and not documentos.jsonl. An unrecognized phenomenon
+  is a per-file failure. Main exits for missing/invalid corpus directory.
+
+Chunk consumer compatibility:
+  NERV/src/nerv/chunking/pipeline.py::_REQUIRED_FIELDS requires exactly the five
+  shared fields doc_id, fuente, formato, fenomeno, texto. idioma and metadata are
+  accepted as extra input fields but discarded from chunk output.
+
+Boundary classification: COMPATIBLE.
+Hidden transformation: idioma and metadata are silently dropped by
+build_chunk_record. No field renaming is required.
+
+
+8. CHUNKING CONTRACT
+====================
+
+Producer: NERV/src/nerv/chunking/pipeline.py::build_chunk_record.
+File type: compact UTF-8 JSON Lines, one chunk per line.
+
+Base fields:
+  doc_id       Copied from input document.
+  chunk_id     "{doc_id}-chunk-{position:04d}".
+  fuente       Copied from input.
+  formato      Copied from input.
+  fenomeno     Copied from input.
+  posicion     Zero-based integer enumeration within each document.
+  num_tokens   Token count of "passage: " plus chunk text with special tokens off.
+  texto        Chunk text without stored passage prefix.
+
+Optional hard-split metadata:
+  FACT FROM CODE: None is produced or consumed in the current checkout.
+  No hard_split_source_unit_count, hard_split_generated_chunk_count, parent unit
+  ID, split index, or equivalent field appears in current source.
+
+Oversized sentence behavior:
+  create_chunks emits a sentence larger than max_tokens unchanged as a standalone
+  chunk. It does not hard-split it. pipeline records it as oversized.
+
+Ordering:
+  Document input order is preserved, and chunks are emitted in ascending position.
+  IDs are deterministic for stable doc_id, text segmentation, and configuration.
+
+Configuration:
+  Intended canonical source is config/encoder_config.json through
+  load_encoder_config. That file is absent. CLI flags can override model and token
+  limits only after parse_args first successfully loads the missing file.
+
+FACT FROM CODE: The current base output schema is directly accepted by the manual
+embedding scripts because they load arbitrary JSON objects and use only texto,
+doc_id, and chunk_id later.
+
+
+9. EMBEDDINGS CONTRACT
+======================
+
+Direct answers:
+
+1. Does embeddings load chunks.jsonl directly?
+   NO. NERV/src/nerv/embeddings has no JSONL loader. Manual scripts load it.
+
+2. Which fields does it expect?
+   generate_embeddings expects only a sequence of already prepared strings.
+   generador_con_tiempos expects chunk["texto"] for encoding and doc_id/chunk_id/
+   texto for result recovery. paso_final_local expects complete chunks for metadata.
+
+3. Does it tolerate optional hard-split fields?
+   YES at the script loader level: unknown JSON fields remain in each dict and do
+   not affect encoding. There is no validation of their semantics.
+
+4. Does it preserve chunk order?
+   YES in the current sequential list/batch loops. cargar_chunks appends file order;
+   batch slices write results back to the same row interval.
+
+5. How is chunk_id associated with embedding row i?
+   Only by the assumption that chunks list row i produced embedding row i. The
+   embedding file itself stores no chunk_id.
+
+6. Is metadata discarded?
+   generate_embeddings discards all metadata because it sees only strings.
+   paso_final_local separately writes original chunk dictionaries to metadata.jsonl.
+   generador_con_tiempos does not persist index metadata at all.
+
+7. Is passage prefix applied exactly once?
+   In generador_con_tiempos and prueba_rapida, yes for ordinary unprefixed texto:
+   each script explicitly constructs "passage: " + texto once. The embeddings API
+   does not own or check prefixing, so callers can omit it or double-prefix it.
+
+8. Is truncation used?
+   YES in effect. load_encoder sets SentenceTransformer.max_seq_length=256;
+   SentenceTransformer encoding truncates inputs beyond that effective length.
+
+9. Can it safely assume all chunks <=512?
+   It does not validate num_tokens or text tokenization before encoding. Even if all
+   chunks are <=512 under the chunk counter, the encoder currently caps at 256.
+
+10. Does tokenizer/model configuration match config/encoder_config.json?
+    UNKNOWN/NO. The file is absent. Against the expected contract in the audit
+    brief, model name and L2 normalization match in hard-coded script paths, but
+    max input length, explicit special-token behavior, tokenizer revision, device,
+    and authoritative configuration do not match or are not controlled.
+
+Output behavior:
+  SentenceTransformer.encode returns a numpy array, normally float32 for this
+  model; generate_embeddings immediately converts it to nested Python lists.
+  generador_con_tiempos copies those values into a preallocated float32 array.
+  Shape is expected to be (number of texts, 384) but generate_embeddings itself
+  does not validate dimension or row count.
+
+Streaming/memory:
+  Not streaming. All chunks are loaded into memory. The checkpoint implementation
+  allocates the complete float32 matrix. At 336239 x 384 x 4 bytes, the raw matrix
+  is approximately 516 MiB, excluding chunk dictionaries, strings, model, batches,
+  and temporary arrays. Each checkpoint saves the full allocated matrix.
+
+Lifecycle/device:
+  Model/tokenizer are loaded once inside SentenceTransformer. Scripts load one model
+  per process. Default device is cpu. No embedding CLI offers --device or automatic
+  CUDA selection.
+
+Checkpoint/resume:
+  generador_con_tiempos has a .npy plus .progreso.txt mechanism. It validates only
+  that progress is in range. It does not verify source chunks hash, ordered IDs,
+  model, dimension, prefix policy, or configuration before resuming.
+
+Error handling/determinism:
+  Errors propagate. There is no atomic checkpoint publication, recovery validation,
+  or explicit deterministic torch setting. Model inference should normally be
+  stable in evaluation mode, but strict reproducibility is UNKNOWN without pinned
+  versions/revision and runtime execution.
+
+Can current code generate contract-correct embeddings for all 336239 chunks without
+modification? NO.
+
+Blocking reasons: missing artifacts/dependencies, 256-token truncation against a
+512-token hard contract, absent canonical config/revision, and unverified resume/
+row-alignment identity. The loop can physically iterate that many records, but that
+is not sufficient for a correct production artifact.
+
+
+10. ENCODER/TOKENIZER CONSISTENCY
+=================================
+
+Expected frozen value                  Current code                         Result
+-------------------------------------  -----------------------------------  --------
+model intfloat/multilingual-e5-small   Hard-coded in manual scripts; YAML   MATCH only
+                                       example is example/model-name         in scripts
+tokenizer revision                     Not passed by embeddings             MISSING
+embedding dimension 384                build_index and scripts use 384      MATCH
+add_special_tokens=false               Chunk counter uses false; encoder    MISMATCH/
+                                       does not configure it                 UNKNOWN
+document prefix "passage: "            Chunk count and scripts use it       MATCH but
+                                                                            decentralized
+query prefix "query: "                 query_encoder constant               MATCH
+normalize embeddings=true              generate_embeddings hard-codes true  MATCH
+normalization method L2                SentenceTransformer option           MATCH
+future similarity inner product        IndexFlatIP                          MATCH
+FAISS IndexFlatIP                      build_index line 32                   MATCH
+soft chunk limit 256                   Missing canonical config; test data   NOT CURRENTLY
+                                       records historical 256               AUTHORITATIVE
+hard encoder limit 512                 load_encoder MAX_SEQ_LENGTH=256       MISMATCH
+truncation policy                       Implicit truncation at 256            MISMATCH
+device                                  load_encoder default cpu; YAML only   DUPLICATED
+batch size                              YAML 32; timed script 64; smoke 8;    CONFLICTING
+                                       query 1
+
+The tokenizer used for chunk counting is AutoTokenizer. The tokenizer used by
+SentenceTransformer is internally owned by SentenceTransformer. Code does not
+verify that they are the same class, revision, special-token policy, or effective
+max length.
+
+
+11. FAISS CONTRACT
+==================
+
+Index type: faiss.IndexFlatIP, confirmed in build_index.
+Input dtype: converted to numpy float32.
+Input shape: required 2D; second dimension required to be exactly 384.
+Normalization: assumed, not performed or checked by build_index.
+Metric API: caller must pass the string "cosine"; implementation then uses inner
+product on the assumption of L2-normalized vectors.
+IDs: implicit contiguous FAISS row positions 0..n-1. No IndexIDMap or chunk IDs.
+Metadata: separate JSONL whose row i must match vector row i.
+Save/load: faiss.write_index and faiss.read_index at caller-supplied paths.
+Query: float32 (1, d) search; dimension mismatch is left to FAISS.
+
+FACT FROM CODE: Embeddings generated by generate_embeddings are normalized before
+insertion when the normal path is followed.
+
+FACT FROM CODE: build_index accepts arbitrary callers and neither normalizes nor
+verifies vector norms/finite values. Externally supplied .npy files can therefore
+violate cosine semantics silently.
+
+Alignment risk: HIGH. paso_final_local checks only embeddings.shape[0] equals the
+number of loaded chunks, then writes metadata in current chunks order. A reordered
+chunks file with the same row count passes and yields incorrect chunk recovery.
+
+
+12. QUERY PATH
+==============
+
+Input source: caller-supplied queries.jsonl, conventionally
+NERV/corpus/queries/queries.jsonl. That directory/file is absent.
+
+Expected fields:
+  query_id   Required by most scripts. generador.py can synthesize qNNN if absent.
+  text       Preferred query text field.
+  query      Accepted fallback query text field.
+
+No shared validated query loader exists; each script duplicates a permissive JSONL
+loader. Blank lines are skipped; JSON objects, uniqueness, order, and exact count
+are validated only indirectly at final validate_results.
+
+Encoding:
+  encode_query rejects empty/whitespace text, applies "query: " exactly once, and
+  uses generate_embeddings with batch size 1 and L2 normalization.
+
+Top-k search:
+  Retrieval scripts typically request 50 raw candidates. Final ranking keeps 10
+  fragments and 3 documents. config.example.yaml says retrieval top_k=10, but
+  generador.py ignores that value and uses CANDIDATE_POOL_SIZE=50.
+
+Question/corpus separation:
+  FACT FROM CODE: Queries are loaded from a separate query artifact and are never
+  deliberately inserted into the document index.
+  FACT FROM CODE: Outer ingestion excludes extracto_preguntas_50_v2.pdf only when
+  it appears as a recognized auxiliary at the corpus root. The contamination
+  filter can remove chunks containing exact normalized official query text and one
+  known excluded source.
+  INFERENCE: Leakage remains possible if question material appears under another
+  filename/path or is paraphrased enough to evade literal/marker filters.
+
+
+13. RETRIEVAL/RANKING
+=====================
+
+query_encoder.py:
+  Prefix: query: 
+  Batch: 1
+  Normalization: L2 through generate_embeddings
+  Validation: rejects empty query only
+
+retriever.py:
+  Input: one vector, index, positive top_k
+  Output: ordered list of (integer row position, float inner-product score)
+  Behavior: removes FAISS -1 padding positions
+
+ranking.py:
+  rank_results sorts descending by candidate["score"].
+  deduplicate_by_chunk retains the highest-scoring occurrence per chunk_id.
+  aggregate_scores_by_document uses max pooling, not CombSUM.
+
+No learned reranker exists. No diversity policy exists. No document deduplication
+is needed after max-pooling because output is keyed by doc_id. Score ties rely on
+Python stable ordering and upstream candidate order.
+
+Completeness: The components form a callable retrieval chain only when supplied an
+already loaded encoder, already built index, and correctly aligned metadata. They
+do not form a complete ingestion-to-retrieval system.
+
+
+14. EVALUATION
+==============
+
+Metrics implemented:
+  precision_at_k(retrieved_ids, relevant_ids, k).
+
+Validation implemented:
+  validate_results verifies official structural constraints for 50 ordered queries,
+  3 documents, 10 fragments, required IDs/text, rank sequences, and word limit.
+
+Contamination checks implemented:
+  known source, structural markers, and normalized literal query containment.
+
+Ground truth support:
+  NOT IMPLEMENTED as an artifact loader or schema. precision_at_k accepts an
+  in-memory set but nothing constructs it from repository data.
+
+Connection to retrieval:
+  validate_results is called by scripts. precision_at_k is not called by the
+  retrieval path. There is no quality evaluation CLI or report.
+
+
+15. CLI INVENTORY
+=================
+
+COMMAND
+  python src/lector_corpus.py [flags]
+PURPOSE
+  Outer raw corpus ingestion and preprocessing.
+INPUT / OUTPUT
+  Corpus directory -> documentos.jsonl, errores.jsonl, optional cache.
+STATUS
+  IMPLEMENTED_AND_CALLABLE when dependencies are installed.
+
+COMMAND
+  python scripts/validar_documentos.py [documentos.jsonl]
+PURPOSE
+  Validate outer ingestion artifact.
+STATUS
+  IMPLEMENTED_AND_CALLABLE.
+
+COMMAND
+  From NERV/: python -m nerv.chunking.pipeline --input ... --output ...
+PURPOSE
+  Create chunks and config/metrics artifacts.
+STATUS
+  IMPLEMENTED BUT CURRENTLY BLOCKED by missing encoder_config.json and pysbd.
+
+COMMAND
+  From NERV/: python generador.py
+PURPOSE
+  Load prebuilt FAISS/metadata, encode queries, write resultados.jsonl.
+STATUS
+  PARTIALLY_IMPLEMENTED; blocked by absent config.yaml and artifacts. The example
+  config also has a placeholder encoder and index directory.
+
+COMMAND
+  python scripts/generador_con_tiempos.py --chunks ... --queries ...
+PURPOSE
+  Manual chunks-to-results run with embedding timing/checkpoints.
+STATUS
+  MANUAL_SCRIPT_ONLY; not contract-correct for 512-token chunks.
+
+COMMAND
+  python scripts/preparar_para_colab.py --chunks ... --queries ...
+PURPOSE
+  Validate/filter contamination, reuse by chunk hash, hand off embeddings to Colab.
+STATUS
+  MANUAL_SCRIPT_ONLY; referenced notebook is absent from the checkout.
+
+COMMAND
+  python scripts/paso_final_local.py --chunks ... --embeddings ... --queries ...
+PURPOSE
+  Build/save index and metadata, retrieve, validate, save results.
+STATUS
+  IMPLEMENTED_AND_CALLABLE given correct artifacts/dependencies; row identity is
+  under-validated.
+
+COMMAND
+  python scripts/comparar_agregacion.py --base-vectorial ... --queries ...
+PURPOSE
+  Compare CombSUM versus max pooling and write max-pooling results.
+STATUS
+  MANUAL_SCRIPT_ONLY evaluation tool.
+
+COMMAND
+  python scripts/prueba_rapida.py
+PURPOSE
+  Synthetic smoke demonstration.
+STATUS
+  TEST_ONLY/MANUAL_SCRIPT_ONLY; writes sandbox artifacts and was not run.
+
+Console scripts in pyproject.toml: NONE.
+
+Conclusion: A current broad run requires several manual commands and an external
+embedding step or notebook. Missing transitions are ingestion-root handoff,
+authoritative configuration, safe chunk-to-vector persistence, and one run manifest.
+
+
+16. CONFIGURATION AUDIT
+=======================
+
+Source: NERV/config/encoder_config.json
+Classification: CANONICAL BY CODE AND DOCS, BUT MISSING.
+Consumers: chunking configuration and CLI.
+
+Source: NERV/config/config.example.yaml
+Classification: LEGACY/EXAMPLE, not runnable production configuration.
+Conflicts: chunk_size 512 and overlap 64; placeholder model; device cpu; top_k 10;
+metric cosine; paths under NERV/corpus and NERV/entrega.
+
+Source: NERV/config/config.yaml
+Classification: EXPECTED BY generador.py, BUT MISSING.
+
+Source: manual script constants
+Classification: HARDCODED/MODULE_LOCAL.
+Values: model multilingual-e5-small, dimension 384, batch 64, checkpoint 20000,
+candidate pool 50, fragment top 10, document top 3, max 250 words.
+
+Source: NERV/src/nerv/embeddings/encoder.py::MAX_SEQ_LENGTH
+Classification: HARDCODED.
+Value: 256.
+
+Source: outer ingestion constants and CLI flags
+Classification: MODULE_LOCAL. They do not consume nested config.
+
+Source: environment variables
+Classification: MODULE_LOCAL TEST ONLY. NERV_TEST_ENCODER_MODEL enables an optional
+cached-tokenizer test. Production device/model behavior is not environment-driven.
+
+RECOMMENDATION: Make a restored, versioned encoder_config.json authoritative for
+model, tokenizer revision, prefixes, special-token policy, max input length,
+dimension, normalization, and FAISS metric. Keep operational paths/device/batch in
+one runtime YAML or CLI layer that references, but cannot override, frozen semantic
+contract fields without an explicit force/version change.
+
+
+17. PATH/PORTABILITY AUDIT
+==========================
+
+Outer ingestion paths:
+  Uses pathlib and project-relative defaults: PORTABLE.
+  Auto-detects C:\Program Files\Tesseract-OCR\tesseract.exe: WINDOWS_SPECIFIC but
+  conditional; on other systems pytesseract may discover tesseract via PATH.
+  README contains Windows and Unix commands: documentation is mixed-platform.
+
+Nested source:
+  Uses pathlib project-relative paths: generally PORTABLE.
+  resolve_project_path rejects absolute and escaping paths: portable and defensive.
+  No C:\dev\NERV, OneDrive, /content, or Google Drive hard-coded path occurs in
+  nested production source.
+
+Nested scripts:
+  Derive PROJECT_ROOT from __file__: PORTABLE.
+  Documentation examples use PYTHONPATH=src shell syntax: Unix-specific examples,
+  not source behavior.
+  preparar_para_colab requires a manual browser/Drive/notebook flow, but the named
+  notebook is absent: BROKEN_AFTER_CLONE for that documented path.
+
+Repository layout:
+  The unexpected nested NERV/ root makes commands and default artifact paths
+  ambiguous. Outer data/processed is not nested NERV/corpus/processed. This is not
+  machine-specific, but it is BROKEN_AS_ONE_PIPELINE_AFTER_CLONE without explicit
+  handoff paths or consolidation.
+
+
+18. DEPENDENCY AUDIT
+====================
+
+Outer requirements.txt:
+  Declares beautifulsoup4, openpyxl, PyMuPDF, Pillow, pytesseract, pytest.
+  These cover direct third-party imports in outer ingestion/tests. Tesseract plus
+  spa, eng, por, chi_sim language data are external runtime dependencies.
+
+Nested NERV/requirements.txt declared:
+  beautifulsoup4, faiss-cpu, langdetect, numpy, openpyxl, pandas, pillow, pymupdf,
+  pytesseract, pyyaml, scikit-learn, sentence-transformers, torch, tqdm, transformers.
+
+Missing production dependency:
+  pysbd is imported unconditionally by sentence_splitter.py but is not declared.
+  This prevents importing nerv.chunking in a clean declared environment.
+
+Potential tokenizer dependency:
+  sentencepiece/tokenizers are not explicitly listed. transformers and
+  sentence-transformers may install tokenizers transitively; whether the selected
+  multilingual-e5 tokenizer requires sentencepiece in the exact installed version
+  is UNKNOWN because versions are unpinned and runtime packages are unavailable.
+
+Declared but unused in current nested implementation:
+  langdetect, pandas, scikit-learn, tqdm, and the ingestion-related libraries in
+  the placeholder nested ingestion modules. They may be intended future packages,
+  but no current nested production import uses them.
+
+GPU dependencies:
+  torch is unpinned and no CUDA wheel/install strategy is declared. faiss-cpu is
+  explicitly CPU-only. GPU FAISS is not used or required by current code.
+
+Platform sensitivity:
+  faiss-cpu wheel availability varies by Python/platform/version. PyMuPDF/Pillow/
+  torch are binary packages. OCR requires system Tesseract. No versions or hashes
+  are pinned, so reproducibility is weak.
+
+Runtime evidence:
+  python is not on PATH in the audit shell. The bundled Python 3.12.13 interpreter
+  lacks bs4, fitz, pytesseract, yaml, torch, transformers, sentence_transformers,
+  faiss, and pysbd. It has openpyxl, Pillow, and numpy. No packages were installed.
+
+
+19. CPU/GPU DEVICE AUDIT
+========================
+
+Stage                  CPU                         CUDA/GPU
+---------------------  --------------------------  ----------------------------
+Outer ingestion        Supported; CPU/processes    No GPU path
+Chunking               Supported; CPU tokenizer    No GPU path needed
+Embeddings library     Supported, default cpu      Supported only if caller passes
+                                                    device="cuda" and CUDA torch
+generador.py queries   YAML device accepted        Possible via config.yaml
+timed embedding script Hard-coded default CPU      No --device; source edit needed
+Colab preparation      CPU filtering only          External missing notebook
+FAISS build/search     faiss-cpu supported          Not supported by declared stack
+Ranking/evaluation     CPU                         No GPU needed
+
+CUDA detection:
+  None. load_encoder does not call torch.cuda.is_available.
+
+Tensor/model movement:
+  SentenceTransformer(model_name, device=device) owns movement. No direct tensor
+  handling exists in project code.
+
+Environment suitability:
+
+  LOCAL_WINDOWS
+    Ingestion: suitable after packages/Tesseract setup.
+    Chunking: suitable after pysbd and encoder config are restored.
+    Embeddings: technically CPU-capable but likely slow and contract-mismatched.
+    FAISS/retrieval: suitable with faiss-cpu and valid artifacts.
+    Overall current checkout: NOT SUITABLE for E2E today.
+
+  COLAB_CPU
+    Source is mostly portable, but install/config/artifacts and package-root setup
+    are missing. Embeddings would be slow. NOT READY.
+
+  COLAB_GPU
+    Library load_encoder can use cuda, but the full embedding script does not expose
+    device selection and the referenced notebook is absent. NOT READY without edits.
+
+
+20. COLAB PORTABILITY
+=====================
+
+Required future steps:
+
+  1. Clone and select the correct nested project root.
+  2. Install the package editable or set PYTHONPATH correctly.
+  3. Install declared dependencies plus pysbd and an appropriate CUDA-enabled torch.
+  4. Restore encoder_config.json and a runtime config.
+  5. Upload/mount chunks and queries as separate artifacts.
+  6. Expose --device cuda in the embedding runner.
+  7. Write embeddings plus an ordered-ID/hash manifest atomically.
+  8. Download or persist those artifacts for CPU FAISS build/retrieval.
+
+Current blockers:
+  Missing notebook, missing configs, no device flag, unpinned CUDA install, nested
+  layout ambiguity, and unsafe checkpoint identity.
+
+Windows multiprocessing assumptions:
+  Outer ingestion uses ProcessPoolExecutor from a guarded main entry point and uses
+  top-level worker functions, which is compatible with Windows spawn. It is not an
+  obstruction to Linux/Colab. Chunking current production path is sequential; the
+  paused multiprocessing Phase 2 is not present in current source.
+
+
+21. CROSS-STAGE COMPATIBILITY MATRIX
+====================================
+
+Boundary                        Classification              Evidence
+------------------------------  --------------------------  ----------------------
+Corpus -> outer ingestion       COMPATIBLE                  Supported-format readers,
+                                                            F1/F2/F3 path contract
+Outer ingestion -> chunking     COMPATIBLE                  Five required fields match;
+                                                            extra fields tolerated
+Chunking -> embeddings          COMPATIBLE_WITH_ADAPTER     Scripts extract texto and
+                                                            add passage prefix
+Embeddings -> FAISS             COMPATIBLE_WITH_ADAPTER     float32/384 accepted, but
+                                                            metadata is separate
+FAISS -> retrieval              COMPATIBLE_WITH_ADAPTER     Positions require matching
+                                                            metadata JSONL
+Questions -> query encoder      COMPATIBLE_WITH_ADAPTER     Duplicated loaders accept
+                                                            text or query
+Query encoder -> FAISS          COMPATIBLE                  normalized float vector to
+                                                            IndexFlatIP search
+FAISS results -> ranking        COMPATIBLE_WITH_ADAPTER     scripts recover metadata
+Ranking -> result validator     COMPATIBLE                  scripts format required shape
+Retrieval -> quality evaluation NOT_IMPLEMENTED             no ground-truth integration
+Outer ingestion -> nested root  COMPATIBLE_WITH_ADAPTER     manual path/project handoff
+
+Important qualifier: boundary schema compatibility does not make the full chain
+executable. Configuration, dependencies, artifacts, and semantic encoder policy
+still block execution.
+
+
+22. BLOCKING ISSUES
+===================
+
+BLOCKING-1: Split project roots and no complete orchestrator.
+Evidence: outer src/lector_corpus.py is production ingestion; nested
+NERV/src/nerv/ingestion is placeholder; NERV/generador.py starts from a prebuilt
+index. No code calls all stages.
+Impact: no single authoritative E2E execution path.
+Smallest safe fix: define one thin orchestrator at the nested project root that
+invokes outer ingestion by explicit adapter/import or first consolidate packaging.
+
+BLOCKING-2: Missing NERV/config/encoder_config.json.
+Evidence: configuration.py default points there; pipeline.parse_args calls it
+before parsing overrides.
+Impact: chunking CLI cannot start, even with explicit --encoder-model.
+Smallest safe fix: restore the approved frozen file and validate it at startup.
+
+BLOCKING-3: Missing declared pysbd dependency.
+Evidence: sentence_splitter.py imports pysbd unconditionally; requirements omits it.
+Impact: clean installation cannot import chunking.
+Smallest safe fix: declare a compatible version and validate clean install.
+
+BLOCKING-4: Required real artifacts are absent.
+Evidence: no current raw corpus, documentos, production chunks, queries, embeddings,
+metadata, or FAISS index; only a 31-row test chunk fixture exists.
+Impact: no current E2E run can be attempted.
+Smallest safe fix: identify approved external inputs and their hashes; do not
+regenerate until contracts are fixed.
+
+BLOCKING-5: Encoder hard limit conflicts with requested contract.
+Evidence: embeddings/encoder.py forces MAX_SEQ_LENGTH=256; requested hard limit is
+512 and current chunking can emit oversized complete sentences.
+Impact: silent semantic truncation and token-count/embedding disagreement.
+Smallest safe fix: decide and encode one authoritative max length/policy, then add
+boundary tests for 256, 257, and 512-token inputs.
+
+BLOCKING-6: Embedding row identity is not persisted or verified.
+Evidence: .npy has no IDs; paso_final_local checks row count only; checkpoints have
+only numeric progress.
+Impact: same-length reordered/stale chunks silently map search hits to wrong text.
+Smallest safe fix: ordered chunk-ID hash plus source SHA-256/model contract manifest,
+verified before resume/index build.
+
+BLOCKING-7: Missing runtime config and placeholder example values.
+Evidence: generador.py requires config/config.yaml; it is absent. Example encoder is
+example/model-name and index path uses encoder_example.
+Impact: master retrieval command cannot start correctly after clone.
+Smallest safe fix: create an approved real runtime config derived from the canonical
+semantic contract, without duplicating frozen values unnecessarily.
+
+BLOCKING-8: No contract-correct full embedding producer.
+Evidence: embedding library accepts strings only; manual script loads all data,
+hard-codes CPU/256 semantics, and checkpoint identity is unsafe.
+Impact: cannot safely produce the input required by index construction for the full
+validated corpus.
+Smallest safe fix: a small streaming/batched adapter with device option, atomic
+artifacts, manifest, resume verification, and shared configuration.
+
+Number of blocking issues: 8.
+
+
+23. IMPORTANT ISSUES
+====================
+
+IMPORTANT-1: build_index assumes vectors are normalized and finite; it does not
+normalize or validate norms/NaN/Inf.
+
+IMPORTANT-2: Chunking discards idioma and metadata. This may be acceptable for
+retrieval, but it is an undocumented cross-stage loss of provenance.
+
+IMPORTANT-3: Chunking current source has no hard split; complete sentences over the
+configured limit remain oversized. This conflicts with the supplied validated
+hard-split context and suggests checkout/artifact drift.
+
+IMPORTANT-4: Default doc_id fast mode includes mtime_ns. Cloning/copying raw inputs
+without preserved timestamps can alter IDs and invalidate downstream artifacts.
+
+IMPORTANT-5: Model/tokenizer/library versions are unpinned. The tokenizer revision
+is supported only by chunk counting, not embedding loading.
+
+IMPORTANT-6: Tests for embeddings and FAISS are stale and expect NotImplementedError.
+They will fail against current implementations and provide no positive contract
+coverage for normalization, dimension, persistence, or row mapping.
+
+IMPORTANT-7: config.example retrieval top_k=10 is ignored by generador.py, which
+hard-codes candidate pool 50, fragment top 10, and document top 3.
+
+IMPORTANT-8: Query JSONL has no dedicated schema validation before expensive model
+or index work. Duplicate/out-of-order IDs fail only at final result validation.
+
+IMPORTANT-9: Checkpoint writes the entire allocated vector array every 20000 rows,
+including unfilled zero rows, and is not atomic.
+
+IMPORTANT-10: External Colab embedding flow is referenced but its notebook and
+artifact semantic contract are absent.
+
+
+24. MINOR ISSUES
+================
+
+MINOR-1: NERV README/docs still describe all stages as initial scaffolding although
+several stages now have real implementations.
+
+MINOR-2: NERV/src/nerv/chunking/test.py appears to be stray/dead experimental code.
+
+MINOR-3: Tracked __pycache__ files are generated artifacts and can confuse source
+inventory and Python-version portability.
+
+MINOR-4: Repeated JSONL query/chunk/metadata loaders duplicate weak validation.
+
+MINOR-5: Fragment truncation returns the original over-250-word text when no
+sentence boundary appears in the first 250 words; validate_results then fails late.
+
+MINOR-6: precision_at_k divides by k even when fewer than k records are retrieved.
+That can be a valid convention, but it is undocumented.
+
+
+25. MINIMUM CHANGES REQUIRED FOR FIRST END-TO-END RUN
+=====================================================
+
+1. Choose NERV/ as the packaged application root and explicitly adapt the outer
+   ingestion artifact path, or move the validated ingestion implementation into
+   the package in a separate authorized change.
+
+2. Restore canonical encoder_config.json with approved exact values and a schema
+   version. Resolve max input length and special-token semantics before generating
+   any vectors.
+
+3. Add pysbd to dependencies and create real config.yaml/path defaults.
+
+4. Add one chunks-to-embeddings adapter that:
+   reads JSONL in stable batches; validates required fields and token bound;
+   applies passage prefix in one owned location; writes float32 .npy or equivalent;
+   records ordered chunk-ID hash, source file SHA-256, row count, dimension, model,
+   revision, prefix, normalization, max length, and device; verifies resume state.
+
+5. Harden index build entry point to verify manifest identity, row count, 384
+   dimensions, finite float32 values, and approximately unit L2 norms.
+
+6. Add one strict query loader for q001-q050 and keep it outside corpus ingestion.
+
+7. Add a tiny E2E fixture gate before full execution.
+
+No architecture rewrite, database service, workflow framework, or multiprocessing
+resumption is required for the first correct pipeline.
+
+
+26. PROPOSED MINIMAL ORCHESTRATOR
+================================
+
+Recommended location: NERV/src/nerv/pipeline.py
+Recommended CLI: python -m nerv.pipeline
+
+Why this location:
+  It belongs to the installed application package, can reuse typed stage functions,
+  is testable without subprocesses, and avoids making a root script the source of
+  truth. NERV/generador.py can remain an official delivery wrapper that calls the
+  retrieval-to-results portion later.
+
+Minimal responsibilities:
+
+  load frozen semantic config and runtime config
+  validate project/artifact paths
+  run or reuse ingestion adapter output
+  run or reuse validated chunks
+  generate or reuse verified embeddings plus manifest
+  build or load verified IndexFlatIP plus aligned metadata
+  load and validate separate queries
+  encode queries
+  retrieve/rank
+  validate and atomically save results
+  atomically save run metrics/manifest
+
+The orchestrator should sequence existing functions and thin adapters. It should
+not contain document parsing, chunking logic, model math, FAISS ranking logic, or
+evaluation metric implementations.
+
+Error model:
+  Fail fast before a stage on missing/mismatched contracts. Preserve prior valid
+  artifacts via temporary-file plus atomic replace. Do not catch and continue after
+  semantic config, manifest, dimension, or alignment failures.
+
+
+27. ARTIFACT REUSE / STAGE SKIPPING STRATEGY
+============================================
+
+Recommended first interface:
+
+  --from-stage ingestion|chunking|embeddings|index|retrieval
+  --to-stage   ingestion|chunking|embeddings|index|retrieval
+  --reuse-existing
+  --force-stage STAGE
+
+Avoid a generic --skip-existing that trusts filenames alone.
+
+Reuse decision per artifact should validate:
+
+  schema version
+  producing code/package version
+  exact source artifact SHA-256
+  semantic encoder configuration hash
+  row count
+  ordered ID hash where rows have identities
+  model/tokenizer revision
+  dimension/dtype/normalization for embeddings/index
+
+Existing useful mechanism:
+  preparar_para_colab hashes the raw chunks file before reusing filtered chunks.
+  Extend the principle, not necessarily that exact state-file format.
+
+Stage-specific reuse:
+  documentos: corpus manifest plus ingestion settings/doc-ID mode.
+  chunks: documentos SHA-256 plus chunking/encoder-tokenizer config hash.
+  embeddings: chunks SHA-256 plus ordered chunk-ID hash and encoder contract hash.
+  index/metadata: embeddings hash plus metadata ordered-ID hash and FAISS contract.
+  results: index/metadata hashes plus queries hash and ranking config.
+
+
+28. PERFORMANCE INSTRUMENTATION PLAN
+====================================
+
+Required timings using time.perf_counter:
+
+  T_ingestion
+  T_chunking
+  T_embeddings
+  T_faiss_build
+  T_query_encoding
+  T_retrieval
+  T_total
+
+Required throughput/latency:
+
+  ingestion documents/s and source files/s
+  chunking documents/s and chunks/s
+  embeddings chunks/s, embeddings/s, batches/s, batch latency
+  FAISS rows/s and build duration
+  query encoding queries/s
+  retrieval latency per query: median, p95, maximum
+  total result generation duration
+
+Resource/context fields:
+
+  Python/platform/package versions
+  CPU model/logical thread count
+  device string and CUDA availability/name/version when relevant
+  batch size
+  model/tokenizer revision and max length
+  peak resident memory if psutil/resource support is practical
+  artifact sizes and hashes
+
+Instrumentation should write one JSON run metrics artifact and concise logs. Do not
+place per-document text or queries in logs. The first full run should establish
+which stage dominates before resuming chunk multiprocessing optimization.
+
+
+29. RECOMMENDED E2E IMPLEMENTATION PHASES
+=========================================
+
+E2E PHASE 1: Contract and checkout reconciliation
+GOAL
+  Establish one source tree, restore semantic config, declare pysbd, resolve
+  256/512 and special-token policy, define artifact manifests.
+FILES LIKELY TO CHANGE
+  NERV/config/encoder_config.json, NERV/requirements.txt,
+  NERV/src/nerv/embeddings/encoder.py, configuration/contract tests, project docs.
+TEST GATE
+  Clean install/import; exact tokenizer/model config assertions; 256/257/512 token
+  boundary tests; current chunk fixture remains deterministic.
+STOP CONDITION
+  No vector generation until semantic contract tests pass.
+
+E2E PHASE 2: Minimal adapters and orchestrator
+GOAL
+  Add ingestion handoff, embedding artifact adapter/manifest, query loader, and thin
+  nerv.pipeline CLI with stage selection.
+FILES LIKELY TO CHANGE
+  NERV/src/nerv/pipeline.py, a small embeddings artifact module, a query loader,
+  packaging/docs, focused tests.
+TEST GATE
+  Pure/synthetic stage tests; atomic failure leaves previous artifacts unchanged;
+  reordered same-length chunks are rejected.
+STOP CONDITION
+  Do not use the full corpus until a tiny E2E run succeeds.
+
+E2E PHASE 3: Small-fixture end-to-end
+GOAL
+  Ingest a small heterogeneous fixture through validated results.
+FILES LIKELY TO CHANGE
+  Tests/fixtures and only defects exposed by the run.
+TEST GATE
+  Deterministic IDs/order, exact prefixing once, normalized 384D vectors,
+  IndexFlatIP, correct metadata recovery, query/corpus separation.
+STOP CONDITION
+  Any contract or alignment discrepancy returns to Phase 1/2.
+
+E2E PHASE 4: Controlled full-corpus execution
+GOAL
+  Reuse approved documentos/chunks if hashes match; generate full embeddings,
+  index, and results with manifests and stage metrics.
+FILES LIKELY TO CHANGE
+  No production source unless a confirmed defect is isolated; generated artifacts
+  remain outside Git.
+TEST GATE
+  336239 row count, hashes, finite normalized vectors, dimension 384, metadata
+  identity, 50-query schema validation, no known query leakage.
+STOP CONDITION
+  Abort on resource exhaustion, hash drift, truncation, or alignment failure; do not
+  silently resume against changed inputs.
+
+E2E PHASE 5: Profiling decision
+GOAL
+  Compare stage timings and select the actual bottleneck.
+FILES LIKELY TO CHANGE
+  Only the selected stage and benchmark tests in a later authorized task.
+TEST GATE
+  Byte/semantic contract equivalence plus measured improvement.
+STOP CONDITION
+  Do not resume chunking multiprocessing unless chunking materially dominates or
+  the expected full-run savings justify its risk.
+
+
+30. FILES LIKELY TO CHANGE
+==========================
+
+No files below were changed by this audit. Likely future scope:
+
+  NERV/config/encoder_config.json                         restore/add
+  NERV/config/config.yaml                                create runtime config
+  NERV/requirements.txt                                  declare pysbd/pins as approved
+  NERV/src/nerv/embeddings/encoder.py                    shared config/max length
+  NERV/src/nerv/embeddings/embedding_generator.py        contract validation
+  NERV/src/nerv/embeddings/artifacts.py                  possible small new adapter
+  NERV/src/nerv/vector_database/build_index.py           norm/finite validation
+  NERV/src/nerv/retrieval/queries.py                     possible strict query loader
+  NERV/src/nerv/pipeline.py                              minimal orchestrator
+  NERV/generador.py                                      thin wrapper/config alignment
+  NERV/tests/test_embeddings.py                          replace stale scaffold test
+  NERV/tests/test_faiss.py                               replace stale scaffold test
+  NERV/tests/...                                         focused E2E/alignment tests
+  NERV/docs/Pipeline.md and README.md                    current operational truth
+
+The outer src/lector_corpus.py should not be moved or rewritten casually. First
+choose whether to package it through a narrow adapter or consolidate it in a
+separate, explicitly authorized phase while preserving its tested CLI/contracts.
+
+
+31. TEST STRATEGY
+=================
+
+Contract tests:
+  documentos required/optional fields and stable order
+  chunks base fields plus any approved hard-split fields
+  tokenizer/model/prefix/special-token/max-length exact equality
+  embedding float32 shape (n,384), finite values, unit norms
+  index type IndexFlatIP, ntotal, dimension, metadata identity
+  query schema q001-q050, separate location, prefix once
+  results exactly 3 documents and 10 fragments
+
+Boundary tests:
+  direct outer documentos record into nested chunking
+  optional input metadata and hard-split fields tolerated/preserved as approved
+  reordered chunks with same count rejected by embedding/index manifest
+  wrong model/revision/prefix/dimension/norm rejected
+  empty/malformed JSONL fails before artifact replacement
+  checkpoint cannot resume after input/config change
+
+Small E2E fixture:
+  Include TXT plus one representative structured format, three languages, multiple
+  documents/chunks, and separate queries. Assert that question text never enters
+  document embeddings and retrieved IDs map to exact stored chunk text.
+
+Operational tests:
+  CPU path required; CUDA path conditional.
+  Save/load index round trip.
+  Stage reuse and --force-stage behavior.
+  Failure atomicity.
+
+Current audit validation actually run:
+  Static inspection of all relevant current modules, configs, scripts, tests,
+  documentation, paths, tracked files, imports, and artifacts.
+  Git status was clean at start.
+  Python PATH probe: failed because python is not on PATH.
+  Bundled Python 3.12.13 dependency probe: completed and showed most project runtime
+  packages absent.
+
+Not run:
+  Pytest, Ruff, mypy, model/tokenizer loading, embeddings, FAISS, and E2E smoke.
+Reason:
+  The available interpreter lacks project dependencies; the task forbids installing
+  packages and producing artifacts. Running stale embedding tests could also attempt
+  external model loading. No full workload was run.
+
+
+32. RISKS
+=========
+
+Highest correctness risk:
+  Silent vector-to-chunk misalignment because identity is positional only.
+
+Highest semantic risk:
+  Silent truncation at 256 tokens despite a stated 512-token hard encoder contract,
+  plus non-identical tokenizer special-token/revision policy.
+
+Highest operational risk:
+  Treating manual scripts and stale/missing configs as one reproducible pipeline.
+
+Highest portability risk:
+  Nested project-root ambiguity and the absent Colab notebook/setup contract.
+
+Highest reproducibility risk:
+  Unpinned model/tokenizer/packages and mtime-dependent default document IDs.
+
+Security/data-quality risk:
+  Official questions are separate in the intended query path, but filename/literal
+  contamination checks are not a proof that all evaluation material is excluded.
+
+Resource risk:
+  Full in-memory chunks plus approximately 516 MiB raw embeddings, full-array
+  checkpoint rewrites, model memory, and temporary list conversion can exceed
+  practical local memory or cause long I/O pauses.
+
+
+33. RECOMMENDED NEXT ACTION
+===========================
+
+Start E2E Phase 1 only: reconcile the actual checkout with the claimed validated
+chunk artifact, restore the missing encoder_config.json from an approved source,
+and make an explicit written decision on the 256-versus-512 encoder input policy
+and special tokens. Then add the missing pysbd declaration and focused contract
+tests. Do not generate full embeddings or build the full index until those gates
+pass.
+
+The next implementation task should be narrowly scoped to contracts and clean
+import/config startup. It should not yet build the orchestrator, resume chunking
+multiprocessing, or run the full corpus.
+
+
+CONCISE CONSOLE SUMMARY
+=======================
+
+End-to-end verdict: END_TO_END_NOT_READY
+Ingestion -> Chunking: COMPATIBLE schema; manual cross-root handoff; CLI blocked
+Chunking -> Embeddings: COMPATIBLE_WITH_ADAPTER; semantic max-length mismatch
+Embeddings -> FAISS: COMPATIBLE_WITH_ADAPTER; unsafe identity/norm assumptions
+FAISS -> Retrieval: COMPATIBLE_WITH_ADAPTER; positional metadata required
+Query path: Implemented and separate, but loaders/config/artifacts are incomplete
+Biggest blocker: no authoritative shared encoder contract; 256/512 mismatch can
+silently truncate validated chunks
+Number of blocking issues: 8
+Local Windows suitability: stage-capable after setup; not E2E-ready today
+Colab GPU suitability: not ready; no device CLI/notebook/config contract
+Minimal orchestrator recommended: NERV/src/nerv/pipeline.py with python -m nerv.pipeline
+Recommended next phase: E2E Phase 1, contract and checkout reconciliation
+Report: docs/end_to_end_integration_audit.txt

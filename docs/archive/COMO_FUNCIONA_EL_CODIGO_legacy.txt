@@ -1,0 +1,184 @@
+COMO FUNCIONA NUESTRO CODIGO DE INGESTA
+=======================================
+
+Objetivo
+--------
+
+El codigo convierte un corpus con muchos formatos en:
+
+- data/processed/documentos.jsonl
+- data/processed/errores.jsonl
+
+documentos.jsonl guarda documentos leidos correctamente. errores.jsonl guarda
+archivos omitidos, vacios, imagenes sin texto util, pendientes OCR o fallidos.
+
+
+Comando principal
+-----------------
+
+.venv\Scripts\python.exe src\lector_corpus.py
+
+Con rutas explicitas:
+
+.venv\Scripts\python.exe src\lector_corpus.py --corpus corpus_prueba --salida data\processed
+
+
+Flujo general
+-------------
+
+1. Recorre el corpus en orden determinista.
+2. Ignora basura del sistema y directorios no deseados.
+3. Omite auxiliares conocidos.
+4. Valida extension soportada.
+5. Detecta fenomeno desde carpetas F1_, F2_ o F3_.
+6. Lee el archivo segun formato.
+7. Limpia el texto.
+8. Detecta idioma.
+9. Genera doc_id reproducible.
+10. Guarda documentos e incidencias.
+11. Muestra estadisticas finales.
+
+
+Formatos soportados
+-------------------
+
+PDF, TXT, MD, JSON, CSV, XLSX, HTML, HTM, imagenes y PBF.
+
+
+Metadata y procedencia
+----------------------
+
+Las URLs encontradas en archivos JSON se conservan en metadata.procedencia.urls.
+Esa metadata sirve para trazabilidad de la fuente y no necesita mezclarse con el
+texto indexado.
+
+Las imagenes se procesan con OCR. Si tienen texto visible, entran como documento
+de formato imagen. Si son fotos sin texto util, no inventamos descripcion: se
+registran en errores.jsonl como sin_texto_util y se conserva metadata tecnica de
+la imagen, como ancho, alto y modo.
+
+Los indices o tablas de contenido de PDFs se conservan dentro del texto del
+mismo PDF. No se crean documentos independientes solo para indices.
+
+
+PBF
+---
+
+Los .pbf del corpus se leen como tiles Mapbox Vector Tile. El lector decodifica
+las capas, features, claves y valores del protobuf, y convierte las propiedades
+en lineas de texto consultables.
+
+Para no repetir la misma entidad territorial muchas veces, el lector mantiene
+una deduplicacion global de features PBF durante la corrida. Antes, si un tile
+era valido pero todas sus features ya habian aparecido en otro tile, el lector
+devolvia texto vacio y el procesamiento lo registraba como vacio.
+
+Ahora ese caso queda separado:
+
+- PBF valido con features nuevas: se guardan las propiedades.
+- PBF valido sin contenido nuevo: se guarda un resumen compacto.
+- PBF realmente vacio: queda como vacio.
+- PBF corrupto o no reconocible: queda como fallido con error de parser.
+
+Para diagnosticar un PBF puntual:
+
+.venv\Scripts\python.exe src\lector_corpus.py --diagnosticar-pbf corpus_prueba\ruta\archivo.pbf
+
+
+OCR
+---
+
+PDF primero intenta extraccion normal con PyMuPDF. OCR solo se usa si el PDF no
+tiene texto o si hay paginas puntuales sin texto. Imagenes siempre pasan por OCR
+para recuperar texto visible.
+
+Por velocidad, la corrida normal empieza sin OCR para PDFs. Si un PDF escaneado
+no tiene texto nativo, queda registrado como pendiente_ocr durante la primera
+fase y luego se procesa automaticamente en una segunda fase OCR.
+
+Para hacer OCR desde la primera pasada se corre:
+
+.venv\Scripts\python.exe src\lector_corpus.py --ocr
+
+Para ejecutar solo la fase rapida:
+
+.venv\Scripts\python.exe src\lector_corpus.py --sin-ocr
+
+Si ya existe una corrida rapida previa, tambien se puede ejecutar solo lo
+pendiente:
+
+.venv\Scripts\python.exe src\lector_corpus.py --solo-pendientes-ocr
+
+Idiomas OCR:
+
+spa+eng+por+chi_sim
+
+
+Rendimiento
+-----------
+
+TXT, MD, CSV, JSON, HTML y XLSX se pueden leer en paralelo con hilos.
+
+PDF e imagenes se leen en procesos separados, no en hilos. Esto mejora la
+primera corrida sin repetir el problema anterior donde PyMuPDF podia matar el
+proceso silenciosamente al usar varios hilos.
+
+Por defecto:
+
+- --trabajadores 6 para formatos livianos
+- --procesos-pesados 2 para PDF e imagenes
+
+Modo conservador:
+
+.venv\Scripts\python.exe src\lector_corpus.py --trabajadores 1 --procesos-pesados 1
+
+
+Cache
+-----
+
+El cache vive en:
+
+data/cache/lecturas.jsonl
+
+Si un archivo conserva ruta relativa, tamano y fecha de modificacion, se
+reutiliza el texto extraido y el doc_id. Esto hace que las corridas posteriores
+sean mucho mas rapidas.
+
+Para forzar lectura completa:
+
+.venv\Scripts\python.exe src\lector_corpus.py --sin-cache
+
+
+doc_id rapido
+-------------
+
+Para acelerar la primera corrida, el doc_id usa por defecto ruta relativa,
+tamano y fecha de modificacion. Esto evita leer otra vez el binario completo de
+cada PDF grande despues de haber extraido el texto.
+
+Si se necesita el modo mas estricto basado en contenido completo:
+
+.venv\Scripts\python.exe src\lector_corpus.py --doc-id-contenido
+
+
+Estadisticas
+------------
+
+Al final se imprime:
+
+- Archivos encontrados
+- Procesados correctamente
+- Omitidos
+- Vacios
+- Pendientes OCR
+- Fallidos
+
+
+Validacion
+----------
+
+.venv\Scripts\python.exe scripts\validar_documentos.py
+
+Pruebas:
+
+.venv\Scripts\python.exe -m pytest tests\test_ingesta.py -q

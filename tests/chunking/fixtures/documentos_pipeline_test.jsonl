@@ -1,0 +1,4 @@
+{"doc_id":"PIPE-ES-001","fuente":"fixtures/spanish_report.pdf","formato":"pdf","fenomeno":1,"texto":"El Dr. Pérez registró 3.14 puntos. ¿Terminó la revisión? El equipo confirmó el resultado. La evidencia quedó archivada."}
+{"doc_id":"PIPE-EN-001","fuente":"fixtures/english_report.pdf","formato":"pdf","fenomeno":2,"texto":"Dr. Smith recorded 4.25 points. Did the review finish? The team confirmed the result. The evidence was archived."}
+{"doc_id":"PIPE-PT-001","fuente":"fixtures/portuguese_report.pdf","formato":"pdf","fenomeno":3,"texto":"O Dr. Almeida registrou 5.75 pontos. A revisão terminou? A equipe confirmou o resultado. A evidência foi arquivada."}
+{"doc_id":"PIPE-ES-OVERSIZED","fuente":"fixtures/oversized_report.pdf","formato":"pdf","fenomeno":4,"texto":"Esta oración individual deliberadamente extensa conserva íntegramente todos sus caracteres aunque el tokenizer falso indique que supera el límite pequeño configurado. Fin."}

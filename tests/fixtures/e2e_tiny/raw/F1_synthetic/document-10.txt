@@ -1,0 +1,1 @@
+La calibracion kappa conserva la precision de las mediciones orbitales.

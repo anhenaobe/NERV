@@ -1,0 +1,1161 @@
+NERV - REPORTE DE IMPLEMENTACION DEL HARD LIMIT DE CHUNKING
+===========================================================
+
+Fecha de inspeccion: 2026-08-09
+Repositorio inspeccionado: C:\dev\NERV
+Modo de trabajo: REPORT-ONLY
+Veredicto: READY_WITH_WARNINGS
+
+
+0. RESUMEN EJECUTIVO
+--------------------
+
+La implementacion agrega una capa posterior al chunking normal que impide que
+un registro publicado supere el limite de entrada del encoder. El flujo conserva
+el objetivo soft de 256 IDs y preserva intactas las unidades logicas entre 257 y
+512 IDs. Solo una unidad cuyo recuento exacto, incluyendo el prefijo de documento
+"passage: ", sea mayor que 512 entra al nuevo subdivisor.
+
+La capa se encuentra dentro de pipeline._process_document, despues de obtener
+los chunks logicos mediante _create_additive_chunks o create_chunks y despues de
+recontarlos exactamente con TokenCounter.count_many. Se ejecuta antes de la
+enumeracion final y antes de build_chunk_record. Este seam cubre las dos rutas de
+agrupamiento sin modificar PySBD, la extraccion de filas ni create_chunks.
+
+La jerarquia implementada es:
+
+1. limites de celda para CSV/tabulares;
+2. separadores estructurales textuales para JSON;
+3. newline, punto y coma, dos puntos, coma, puntuacion y whitespace;
+4. offsets del tokenizer y, si no estan disponibles, busqueda exacta por
+   limites de caracteres.
+
+Cada fragmento se recuenta con el prefijo, se rechaza si supera el hard limit y
+conserva rangos de cobertura no solapados. El texto emitido puede incluir overlap
+intencional de hasta 32 tokens; los rangos coverage_start/coverage_end no lo
+incluyen. Concatenar esos rangos reconstruye exactamente el chunk logico padre.
+
+El pipeline vuelve a comprobar el limite durante la construccion del registro y
+justo antes de escribir JSONL. El validator independiente vuelve a tokenizar el
+texto, clasifica los tres rangos soft/hard y considera invalido cualquier chunk
+real mayor que 512.
+
+No se encontro un defecto BLOCKING en el contrato de seguridad de 512. El
+veredicto es READY_WITH_WARNINGS porque no existe aun medicion de rendimiento
+del flujo completo despues del recuento exacto adicional, hay componentes de
+costo cuasi-cuadratico para unidades extremas, la revision de overlap del
+validator no comprueba el numero real declarado y quedan algunos gaps de tests
+para fallbacks/formatos patologicos.
+
+
+1. ALCANCE Y LIMITACION DEL DIFF GIT
+------------------------------------
+
+El checkout no contiene una historia Git util para reconstruir un diff de esta
+feature: `git log` no devuelve commits y `git status` muestra casi todo el arbol
+como untracked. El unico `git diff` visible corresponde a un archivo de
+.devcontainer no relacionado. Por ello no es posible afirmar, desde Git, si un
+archivo fue modificado o creado respecto de una revision base.
+
+El inventario siguiente se reconstruyo a partir de los simbolos presentes, los
+archivos atribuibles a la implementacion y la evidencia de la sesion en que se
+aplico y valido el cambio. Debe leerse como inventario de implementacion, no como
+salida literal de `git diff`.
+
+1.1 Archivos fuente nuevos
+
+- src/nerv/chunking/hard_limit.py
+  Motivo: aislar la subdivision hard del chunker semantico existente.
+  Simbolos principales:
+  - _HardLimitCounter: Protocol minimo para count y token_offsets.
+  - HardSplitPart: texto emitido, conteo, cobertura, inicio emitido y overlap.
+  - HardSplitResult: partes, estrategia y conteo del padre.
+  - _tabular_boundary_ends, _json_boundary_ends.
+  - _partition_at_boundaries, _partition_by_token_offsets.
+  - _largest_safe_character_end, _overlap_start, _materialize_parts.
+  - split_hard_limited_text: API central de la capa.
+  Participacion: recibe un chunk logico ya contado y devuelve una o mas partes
+  encoder-safe sin intervenir en segmentacion ni agrupamiento normal.
+
+1.2 Archivos fuente modificados
+
+- src/nerv/chunking/configuration.py
+  Motivo: representar y validar el hard limit en el contrato congelado.
+  Cambios:
+  - EncoderConfig incorpora encoder_max_input_tokens.
+  - load_encoder_config exige schema_version 2 y valida relaciones soft/hard/
+    overlap.
+  - verify_encoder_capacity compara el limite configurado con metadata del
+    tokenizer y max_position_embeddings del modelo.
+  Participacion: provee el limite por defecto y la comprobacion de capacidad
+  antes del flujo real.
+
+- src/nerv/chunking/token_counter.py
+  Motivo: obtener offsets de caracteres sin truncamiento para el fallback y el
+  overlap internos.
+  Cambio principal:
+  - TokenCounter.token_offsets(text) solicita return_offsets_mapping=True,
+    add_special_tokens segun configuracion y truncation=False; valida tipo,
+    orden y rango de cada par.
+  Participacion: evita reconstruir texto mediante tokenizer.decode y permite
+  cortar el string original por offsets.
+
+- src/nerv/chunking/pipeline.py
+  Motivo: insertar enforcement, trazabilidad y metricas en el seam post-chunk.
+  Cambios:
+  - PipelineDocumentProgress y PipelineSummary agregan contadores hard split.
+  - _ProcessedDocument transporta los nuevos agregados.
+  - process_document acepta encoder_max_input_tokens opcional.
+  - _process_document realiza recuento exacto final, fallback escalar cuando una
+    estimacion aditiva difiere, subdivision, flatten y metadata condicional.
+  - _validate_pipeline_configuration valida soft <= hard.
+  - write_chunking_config registra hard limit y nueva politica oversized.
+  - run_pipeline carga/propaga el hard limit, acumula agregados y se niega a
+    escribir un registro mayor que el limite.
+  - main verifica la capacidad del tokenizer/modelo antes de ejecutar.
+  Participacion: es el punto de integracion de extremo a extremo.
+
+- src/nerv/chunking/real_corpus.py
+  Motivo: propagar el contrato a produce, validate y metricas/benchmark.
+  Cambios:
+  - HARD_SPLIT_TRACE_FIELDS define el esquema opcional.
+  - _load_counter llama verify_encoder_capacity.
+  - produce_command inicializa, acumula y finaliza agregados hard split.
+  - validate_command agrega bins soft/hard, hard failure, validacion individual
+    de trace y reconstruccion agrupada por parent_chunk_id.
+  - benchmark propaga el limite e incluye agregados por repeticion, sin cambiar
+    la metodologia.
+  Participacion: hace observable y verificable el nuevo contrato operacional.
+
+1.3 Archivo de configuracion modificado
+
+- config/encoder_config.json
+  Motivo: fuente canonica del limite hard.
+  Cambios:
+  - schema_version: 1 -> 2.
+  - encoder_max_input_tokens: 512.
+  - oversized_sentence_policy pasa a
+    preserve_through_encoder_limit_then_hierarchical_subdivide.
+
+1.4 Tests y evaluadores nuevos
+
+- tests/chunking/test_hard_limit.py
+  Motivo: contratos unitarios del helper aislado.
+  Cubre limites, extremos, jerarquia, determinismo, coverage y overlap.
+
+- tests/chunking/evaluate_hard_limit.py
+  Motivo: verificacion controlada con el tokenizer/modelo congelados reales.
+  Genera entradas con total exacto 513, 577, 1000, 1600, 4200 y 10239 IDs.
+
+- tests/chunking/results/hard_limit_synthetic_metrics.json
+  Motivo: evidencia persistida de la verificacion real-tokenizer.
+  No es codigo de test; es el artifact de resultados.
+
+1.5 Tests modificados
+
+- tests/chunking/test_pipeline.py
+  Motivo: contrato de config generada, preservacion <=512, expansion >512,
+  IDs/posiciones, trace y defensa frente a no-aditividad no muestreada.
+  Tests relevantes:
+  - test_pipeline_subdivides_only_above_hard_limit_with_trace.
+  - test_hidden_non_additivity_cannot_bypass_final_exact_recount.
+
+- tests/chunking/test_real_corpus_commands.py
+  Motivo: metricas de produccion, bins del validator, hard failure y coherencia
+  de grupos parent/parts.
+  Tests relevantes:
+  - test_validate_hard_fails_actual_encoder_count_above_limit.
+  - test_validate_requires_one_complete_hard_split_parent_trace.
+  - aserciones de hard_split_* en el test de produce falso.
+
+1.6 Documentacion nueva
+
+- docs/decisions/ADR-encoder-hard-limit-rev-a.md
+  Motivo: versionar la decision Rev A y sus consecuencias.
+
+- docs/chunking/hard_limit_implementation_report.txt
+  Motivo: este reporte especializado, unica escritura autorizada en la tarea
+  REPORT-ONLY actual.
+
+1.7 Documentacion modificada durante la implementacion
+
+- src/nerv/chunking/README_CHUNKING.md
+  Describe contrato Rev A, seam, estrategias, overlap, trace y baseline.
+
+- docs/Pipeline.md
+  Actualiza el contrato general de chunking a soft=256/hard=512.
+
+- docs/chunking/current_chunking_pipeline_flow.txt
+  Inserta recuento exacto y hard-limit enforcement en el flujo ejecutable.
+
+1.8 Archivos inspeccionados pero no modificados por esta feature
+
+- src/nerv/chunking/chunker.py: create_chunks se conserva como chunker normal.
+- src/nerv/chunking/sentence_splitter.py: PySBD/bounded segmentation no cambia.
+- src/nerv/chunking/language_detector.py: no cambia.
+- embeddings, FAISS, retrieval, agentes, ingestion y query processing: fuera de
+  alcance y sin cambios atribuibles a esta feature.
+
+
+2. PUNTO EXACTO DE INSERCION
+----------------------------
+
+El recorrido real es:
+
+run_pipeline
+  -> read_documents
+  -> validate_document
+  -> _process_document
+       -> para csv/tsv/xls/xlsx: _split_document_sentences (filas)
+       -> para narrativa normal:
+            detect_language
+            _split_sentences_bounded_with_stats
+       -> _create_additive_chunks
+            o create_chunks si no se demuestra aditividad
+       -> TokenCounter.count_many sobre todos los chunks logicos finales
+       -> si estimated_token_counts != chunk_token_counts:
+            create_chunks escalar con count_encoder_input
+            TokenCounter.count_many exacto nuevamente
+       -> para cada (chunk, token_count):
+            <= encoder_max_input_tokens: conservar
+            > encoder_max_input_tokens: split_hard_limited_text
+       -> flatten de partes
+       -> enumerate final
+       -> build_chunk_record
+       -> record.update(metadata) solo si hubo hard split
+  -> defensa token_count <= encoder_max_input_tokens
+  -> json.dumps + escritura JSONL atomica
+
+Las lineas decisivas estan en pipeline.py:
+
+- _process_document: 467.
+- chunking normal: 519-562.
+- hard-limit decision: 570-584.
+- metadata de partes: 594-612.
+- enumeracion final y build_chunk_record: 616-636.
+- defensa antes de escribir: run_pipeline 853-860.
+
+Este punto se eligio porque el hard limit es un contrato del encoder sobre el
+texto final del chunk, no una regla de segmentacion linguistica. Colocarlo en
+PySBD cortaria oraciones antes de saber si el chunk final es compatible y
+alteraria narrativa segura. Colocarlo dentro de create_chunks mezclaria dos
+responsabilidades, duplicaria comportamiento entre la ruta aditiva y escalar y
+haría depender la seguridad del camino elegido. El seam post-chunk recibe el
+texto exacto que se va a almacenar y cubre ambas rutas con una sola politica.
+
+
+3. FUENTE DE VERDAD DEL HARD LIMIT
+----------------------------------
+
+La fuente canonica es:
+
+config/encoder_config.json
+  encoder_max_input_tokens = 512
+
+No se deriva dinamicamente un nuevo limite para reemplazar ese valor. El runtime
+combina configuracion versionada y verificacion de capacidad:
+
+1. load_encoder_config carga schema_version 2 y exige hard >= soft.
+2. real_corpus._load_counter construye TokenCounter con el modelo/prefijo de la
+   misma configuracion.
+3. verify_encoder_capacity rechaza hard > tokenizer.model_max_length cuando el
+   valor reportado es entero.
+4. AutoConfig carga el modelo y rechaza hard > max_position_embeddings.
+5. run_pipeline vuelve a rechazar hard > reported_model_max_length.
+6. _process_document cuenta siempre el texto con include_document_prefix=True.
+7. _materialize_parts y _process_document rechazan una parte >hard.
+8. run_pipeline se niega a escribir una parte >hard.
+9. validate vuelve a contar independientemente y marca >hard como invalido.
+
+El helper de capacidad garantiza "configurado no excede capacidad", no igualdad
+estricta. La igualdad 512/512/512 se comprobo separadamente en
+evaluate_hard_limit.py y quedo persistida en hard_limit_synthetic_metrics.json:
+
+- tokenizer_model_max_length = 512;
+- model_max_position_embeddings = 512;
+- hard_limit = 512.
+
+Usos runtime principales del campo:
+
+- configuration.py: validacion y verify_encoder_capacity.
+- pipeline.process_document/run_pipeline: default y propagacion.
+- pipeline._process_document: decision, subdivision y asercion.
+- pipeline.run_pipeline: defensa de escritura y PipelineSummary.
+- pipeline.write_chunking_config: artifact de ejecucion.
+- real_corpus produce/validate/benchmark: propagacion y validacion.
+
+Duplicacion literal relevante:
+
+- PipelineSummary.encoder_max_input_tokens tiene default literal 512.
+  La ejecucion real pasa explicitamente el valor cargado, por lo que no rompe el
+  flujo actual, pero puede divergir si cambia el contrato y un caller construye
+  PipelineSummary usando el default.
+
+Los 512 presentes en tests, evaluador y ADR son expectativas del contrato o
+evidencia y no gobiernan el splitter. El diagnostico historico
+analyze_oversized_chunks.py tambien usa 256/512 deliberadamente y falla si se
+invoca con otro contrato; no participa en produce.
+
+
+4. PATH A: CHUNK LOGICO <= HARD LIMIT
+-------------------------------------
+
+Checks:
+
+1. El chunk logico se recuenta exactamente en batch con el prefijo.
+2. Si el conteo exacto difiere de la estimacion aditiva, se rehace el documento
+   con create_chunks escalar antes de continuar.
+3. En el loop de expansion se evalua token_count <= hard.
+
+Resultado:
+
+- expanded_chunks recibe exactamente el mismo objeto/texto del chunk logico.
+- expanded_token_counts recibe el conteo exacto.
+- split_metadata recibe None.
+- no se agregan campos hard_split.
+- build_chunk_record mantiene los ocho campos historicos.
+
+Comparacion con el pipeline anterior:
+
+- Si no existe una discrepancia aditiva y no hubo un hard split anterior en el
+  mismo documento, texto, posicion y chunk_id permanecen iguales.
+- Un chunk seguro posterior a un padre hard-split cambia de posicion e ID porque
+  la enumeracion final incluye las nuevas partes anteriores.
+- Una discrepancia estimado/exacto puede activar create_chunks escalar y cambiar
+  fronteras incluso sin un hard split. Es una correccion de exactitud, no una
+  normalizacion indiscriminada hacia 256.
+
+Las unidades de 257-512 siguen siendo oversized respecto del soft limit, pero
+son encoder-safe y no se subdividen.
+
+
+5. PATH B: CHUNK LOGICO > HARD LIMIT
+------------------------------------
+
+Entrada:
+
+- El conteo exacto supera encoder_max_input_tokens.
+- _process_document llama split_hard_limited_text con texto, formato, counter,
+  hard limit y overlap global.
+
+Dentro de split_hard_limited_text:
+
+1. Se valida texto no vacio, hard positivo y overlap valido.
+2. Se vuelve a contar el padre con el prefijo.
+3. Se crea el conjunto acumulativo de candidatos segun formato/jerarquia.
+4. _partition_at_boundaries intenta producir rangos contiguos; cada candidato
+   se acepta solo tras _count_encoder_input exacto.
+5. Si una capa no puede particionar todos los gaps, se agregan los candidatos de
+   la siguiente capa.
+6. Si ninguna frontera textual funciona, se usa _partition_by_token_offsets.
+7. _materialize_parts agrega overlap, recuenta cada texto emitido y afirma
+   coverage completa.
+8. El resultado vuelve a _process_document y sus partes se agregan al flatten.
+
+La seguridad no depende de que la estrategia semantica encuentre el mejor
+limite. Una frontera suboptima puede reducir calidad estructural, pero toda parte
+se recuenta antes de aceptarse.
+
+
+6. ESTRATEGIAS FORMAT-AWARE Y GENERICAS
+----------------------------------------
+
+6.1 CSV/tabular
+
+Formatos reconocidos: csv, tsv, xls, xlsx.
+
+Antes del hard splitter, _split_document_sentences ya convierte el texto tabular
+en filas no vacias mediante splitlines y strip. No se vuelve a abrir ni reparsear
+el archivo original.
+
+_tabular_boundary_ends recorre el string de la fila/chunk logico y reconoce:
+
+- coma;
+- tab;
+- pipe `|`.
+
+Mantiene un estado in_quotes. Una comilla doble cambia el estado, salvo el caso
+de `""` dentro de un campo quoted, que se trata como escape. Solo agrega un
+delimiter cuando esta fuera de quotes. El offset candidato es index+1, por lo
+que el separador queda al final del rango anterior y no se elimina.
+
+No se crean objetos celda ni se reconstruyen celdas: la operacion es un escaneo
+textual quote-aware. Si una celda individual supera 512 y no ofrece una frontera
+tabular segura, la estrategia tabular no puede cubrir ese gap y se pasa a la
+jerarquia generica y finalmente a offsets.
+
+Matiz: una vez que cae a la jerarquia generica, el patron `comma` no conoce
+quotes y puede elegir una coma dentro del contenido quoted. Esto no pierde texto,
+pero la parte resultante puede no respetar semantica CSV.
+
+6.2 JSON
+
+No se ejecuta json.loads ni se crean dict/list Python.
+
+_json_boundary_ends es un scanner textual con estado in_string/escaped. Fuera
+de strings reconoce:
+
+- coma `,`;
+- cierre de objeto `}`;
+- cierre de lista `]`.
+
+El separador se conserva al final del rango anterior. Funciona con JSON
+minificado si hay suficientes miembros/listas estructurales. Un valor string muy
+largo no ofrece separadores estructurales internos; la capa JSON falla para ese
+gap y se intenta la jerarquia generica. Esa jerarquia puede dividir dentro del
+string por puntuacion o whitespace, y el resultado no pretende ser JSON
+standalone valido. El contrato garantizado es cobertura textual y seguridad del
+encoder, no parseabilidad individual de cada subchunk.
+
+6.3 Texto generico
+
+El orden exacto es:
+
+1. newline: CRLF, CR o LF;
+2. semicolon: `;`;
+3. colon: `:`;
+4. comma: `,`;
+5. punctuation: `.`, `!`, `?` y equivalentes CJK configurados;
+6. whitespace: `\s+`;
+7. token offsets.
+
+Los candidatos se acumulan. Por ejemplo, al llegar a coma se siguen pudiendo
+usar newlines, semicolons y colons anteriores. _partition_at_boundaries ordena
+los offsets y, desde cada coverage_start, busca por bisect el candidato mas
+lejano cuyo substring exacto con prefijo cabe. El siguiente rango comienza
+exactamente en el end anterior; no se descartan separadores ni whitespace.
+
+
+7. TOKEN-SAFE FALLBACK
+----------------------
+
+7.1 API del tokenizer
+
+TokenCounter.token_offsets llama al tokenizer con:
+
+- return_offsets_mapping=True;
+- return_attention_mask=False;
+- return_token_type_ids=False;
+- truncation=False;
+- add_special_tokens segun contrato, actualmente false.
+
+Los offsets se solicitan sobre el contenido sin `passage: `. Por ello se refieren
+directamente a indices del string almacenado. TokenCounter valida que cada par
+sea entero, no negativo, ordenado y no salga de len(text), y elimina pares vacios.
+
+7.2 Presupuesto del prefijo
+
+Los offsets solo proponen limites. Toda decision de capacidad usa
+counter.count(fragment, include_document_prefix=True). De este modo el costo de
+`passage: ` se descuenta implicitamente del maximo de 512. El algoritmo no asume
+un numero fijo de tokens para el prefijo.
+
+7.3 Seleccion del span
+
+_partition_by_token_offsets:
+
+1. obtiene offsets del padre una vez;
+2. extrae/sort los ends unicos;
+3. para cada coverage_start, primero comprueba si todo el sufijo restante cabe;
+4. usa bisect_right para encontrar el primer token posterior al inicio;
+5. propone aproximadamente hard_limit ends mas adelante;
+6. reduce candidate_index uno a uno hasta que el substring exacto con prefijo
+   cabe y termina antes de len(text);
+7. luego intenta crecer end por end mientras siga cabiendo;
+8. si no obtiene progreso, llama _largest_safe_character_end.
+
+_largest_safe_character_end usa busqueda binaria sobre indices Python del string
+y recuenta cada candidato con prefijo. Esto cubre tokenizers sin offset_mapping o
+mappings demasiado dispersos. Si ni un solo code point cabe, lanza ValueError.
+
+El texto final siempre es un slice del string original. tokenizer.decode no se
+usa, evitando normalizacion de espacios, sustitucion de caracteres, cambios de
+Unicode o diferencias de round trip.
+
+7.4 Unicode y whitespace
+
+Los indices de Python operan sobre code points, mientras los offset_mapping del
+tokenizer Hugging Face se validan contra len(text). Los slices preservan los
+caracteres originales y todo whitespace ubicado entre coverage_start/end. El
+algoritmo no llama strip en el hard splitter. Debe distinguirse del camino
+tabular previo, donde _split_document_sentences ya aplicaba strip a cada fila
+antes de esta feature.
+
+7.5 Ejemplos conceptuales sin texto de corpus
+
+Para un contenido sin fronteras utiles:
+
+- ~577 IDs: se espera 2 ventanas. La primera se acerca a 512 total; la segunda
+  cubre el resto y puede incluir hasta 32 tokens de overlap.
+- ~1600 IDs: aproximadamente 4 ventanas encoder-safe.
+- ~10239 IDs: aproximadamente 21 ventanas para el caso sintetico observado.
+
+Los numeros exactos dependen de tokens del prefijo, retokenizacion de cada slice
+y overlap efectivo. test_token_offset_fallback_covers_extreme_inputs cubre los
+totales 577, 1600 y 10239 con texto sin puntuacion y estrategia token_offsets.
+
+El artifact real-tokenizer produjo 2, 4 y 21 partes respectivamente, pero esas
+entradas contenian whitespace y registraron estrategia `whitespace`, no el
+fallback token_offsets. No debe presentarse ese artifact como una medicion pura
+del fallback.
+
+
+8. COBERTURA Y AUSENCIA DE PERDIDA
+----------------------------------
+
+Cada HardSplitPart distingue:
+
+- coverage_start / coverage_end: porcion unica del padre que la parte aporta;
+- emitted_start: inicio real del texto emitido, que puede ser anterior por
+  overlap;
+- text = parent[emitted_start:coverage_end].
+
+La particion base mantiene la invariante:
+
+- primer coverage_start = 0;
+- cada nuevo start = end anterior;
+- ultimo end = len(parent);
+- todos los rangos tienen progreso positivo.
+
+_materialize_parts verifica finalmente:
+
+  "".join(parent[p.coverage_start:p.coverage_end] for p in parts) == parent
+
+Por tanto, concatenar coverage no solapado reconstruye exactamente el chunk
+logico, incluidos separadores y whitespace que ya existian en ese chunk.
+
+La duplicacion intencional se encuentra solo en:
+
+  parent[emitted_start:coverage_start]
+
+El validator usa los offsets para remover esa zona al reconstruir el padre. Los
+gaps se detectan porque exige source_start == previous_end. El overlap no se
+confunde con cobertura porque tiene offsets y contador propios.
+
+Tests:
+
+- test_token_offset_fallback_covers_extreme_inputs: reconstruccion, slices y
+  conteo exacto del overlap.
+- test_hierarchy_prefers_semantic_boundaries: coverage en cada estrategia.
+- test_very_large_structured_units_use_format_boundaries: coverage CSV/JSON.
+- test_pipeline_subdivides_only_above_hard_limit_with_trace: reconstruccion por
+  offsets de registros finales.
+- test_validate_requires_one_complete_hard_split_parent_trace: el validator
+  acepta un grupo completo y rechaza uno con una parte ausente.
+
+
+9. OVERLAP HARD SPLIT
+---------------------
+
+Objetivo: overlap_tokens=32, pero el valor efectivo puede ser menor.
+
+Para cada rango no inicial, _overlap_start:
+
+1. tokeniza el prefijo parent[:coverage_start] solicitando offsets;
+2. elige el start del token ubicado hasta 32 posiciones antes del final;
+3. recuenta exactamente parent[emitted_start:coverage_start] sin passage para
+   obtener overlap_count;
+4. recuenta parent[emitted_start:coverage_end] con passage;
+5. si overlap_count >32 o la parte completa >512, avanza emitted_start un code
+   point y repite;
+6. si no puede conservar overlap, devuelve coverage_start y 0.
+
+Si offsets no estan disponibles, empieza como max(0, coverage_start-32)
+caracteres y aplica las mismas comprobaciones exactas. El overlap reportado es
+un conteo real del substring, no una aproximacion.
+
+No hay doble overlap normal+hard para un padre >512 en el flujo esperado: tanto
+la ruta aditiva como create_chunks eliminan overlap cuando la unidad base ya
+supera el soft limit, porque agregar cualquier overlap mantendria el chunk sobre
+max_tokens. El hard splitter agrega contexto una sola vez entre las partes del
+padre.
+
+Metadata:
+
+- hard_split_overlap_tokens: int, overlap efectivo real de la parte.
+- emitted_start < source_start identifica que texto inicial es duplicado.
+
+Ejemplo sintetico conceptual, hard=10, prefijo=2 tokens, overlap target=3:
+
+Padre: A B C D E F G H I J K L
+Coverage parte 0: A..H
+Coverage parte 1: I..L
+Texto emitido parte 1: F G H I J K L
+Overlap parte 1: F G H = 3
+
+Concatenar coverage produce A..L. Concatenar textos emitidos duplicaria F..H de
+forma intencional.
+
+Limitacion del validator: verifica que hard_split_overlap_tokens este entre 0 y
+32 y reconstruye coverage, pero no vuelve a tokenizar especificamente el tramo
+overlap para demostrar que el numero declarado coincide con el texto.
+
+
+10. IDS, POSICIONES Y TRACE
+---------------------------
+
+La enumeracion final ocurre despues de expandir todos los chunks logicos del
+documento. pipeline._process_document ejecuta:
+
+  enumerate(zip(expanded_chunks, expanded_token_counts, split_metadata))
+
+build_chunk_record crea:
+
+  posicion = indice final
+  chunk_id = f"{doc_id}-chunk-{position:04d}"
+
+Las posiciones reinician en cero por documento y son secuenciales. Si el chunk
+logico 3 produce tres partes, los chunks logicos posteriores se desplazan dos
+posiciones. Esto es aceptable porque chunks.jsonl es un artifact regenerado y
+los IDs deben alinear exactamente con su nuevo orden; preservar numeros viejos
+crearia huecos o reglas especiales fragiles.
+
+El padre logico se representa como:
+
+  {doc_id}-logical-chunk-{logical_position:04d}
+
+Campos opcionales, presentes solo en hard-split records:
+
+- hard_split: bool (siempre true).
+- parent_chunk_id: str.
+- hard_split_strategy: str.
+- hard_split_part_index: int, base cero.
+- hard_split_part_count: int, >=2.
+- hard_split_overlap_tokens: int, 0..32.
+- hard_split_parent_num_tokens: int, >512.
+- hard_split_source_start: int, offset Python del coverage.
+- hard_split_source_end: int, offset exclusivo del coverage.
+- hard_split_emitted_start: int, offset donde comienza texto incluyendo overlap.
+
+Los ocho campos base siguen siendo doc_id, chunk_id, fuente, formato, fenomeno,
+posicion, num_tokens y texto.
+
+Ejemplo sintetico ilustrativo de una parte:
+
+{
+  "doc_id": "SYNTH-001",
+  "chunk_id": "SYNTH-001-chunk-0001",
+  "fuente": "synthetic.txt",
+  "formato": "txt",
+  "fenomeno": 0,
+  "posicion": 1,
+  "num_tokens": 420,
+  "texto": "[texto sintetico de la parte, incluido overlap inicial]",
+  "hard_split": true,
+  "parent_chunk_id": "SYNTH-001-logical-chunk-0000",
+  "hard_split_strategy": "token_offsets",
+  "hard_split_part_index": 1,
+  "hard_split_part_count": 2,
+  "hard_split_overlap_tokens": 32,
+  "hard_split_parent_num_tokens": 900,
+  "hard_split_source_start": 1800,
+  "hard_split_source_end": 3400,
+  "hard_split_emitted_start": 1680
+}
+
+Los offsets del ejemplo son ilustrativos; en una salida real deben corresponder
+exactamente a indices del padre y al texto emitido.
+
+
+11. RECUENTO EXACTO Y FALLBACK ESCALAR
+---------------------------------------
+
+_create_additive_chunks intenta acelerar el grouping:
+
+- count_many cuenta unidades con prefijo;
+- count("") obtiene el costo del prefijo;
+- contributions = unit_count - prefix_count;
+- se muestrean pares al inicio y final para comprobar que unir con espacio sea
+  aditivo;
+- si la muestra coincide, los grupos y sus estimated_token_counts se calculan
+  sumando contributions.
+
+La estimacion puede diferir porque tokenizacion subword/BPE/SentencePiece no es
+obligatoriamente aditiva alrededor de whitespace y concatenaciones. Ademas, el
+muestreo no inspecciona todos los pares internos.
+
+La correccion hard no confia en esa estimacion:
+
+1. TokenCounter.count_many recuenta todos los chunks logicos finales con passage.
+2. Compara chunk_token_counts exactos contra estimated_token_counts.
+3. Si difieren, registra warning y llama create_chunks con count_encoder_input,
+   que cuenta cada candidato completo escalarmente.
+4. Recuenta en batch los nuevos chunks escalares.
+5. Solo entonces aplica la decision <=hard/>hard.
+
+El fallback puede cambiar fronteras: un grupo que parecia <=256 puede resultar
+mayor o menor al tokenizarlo completo. La prioridad es que el grouping y la
+decision hard usen la representacion real que recibira el encoder.
+
+test_hidden_non_additivity_cannot_bypass_final_exact_recount construye una
+interaccion no aditiva fuera del muestreo y demuestra que no puede ocultar un
+chunk >512.
+
+
+12. CAMBIOS DE VALIDACION
+-------------------------
+
+validate conserva checks previos de:
+
+- JSONL y campos requeridos;
+- tipos;
+- chunk_id unico/formato esperado;
+- posiciones y orden documental;
+- metadata fuente/formato/fenomeno;
+- texto no vacio;
+- ausencia de passage almacenado;
+- num_tokens almacenado igual al recuento real;
+- documentos desconocidos/faltantes;
+- identidad de input/output durante el recorrido.
+
+Nuevos campos de metricas:
+
+- chunks_le_soft_limit.
+- chunks_gt_soft_limit_but_le_hard_limit.
+- chunks_gt_hard_limit.
+- maximum_num_tokens.
+- encoder_hard_limit_exceeded_count.
+- hard_split_metadata_error_count.
+
+flush_batch cuenta cada texto con include_document_prefix=True y lo clasifica:
+
+- actual <=256: chunks_le_soft_limit.
+- 256 < actual <=512: chunks_gt_soft_limit_but_le_hard_limit.
+- actual >512: chunks_gt_hard_limit, item invalid y failure
+  encoder_hard_limit_exceeded.
+
+Por tanto >hard no es warning: es chunk invalido, suma failure y el comando
+termina con codigo 2/completion_status completed_with_failures si no ocurre una
+excepcion operacional.
+
+Trace individual:
+
+- si aparece cualquier campo hard, deben aparecer todos;
+- hard_split debe ser true;
+- tipos/rangos/part_count/parent count se validan.
+
+Trace agrupado:
+
+- agrupa por parent_chunk_id;
+- exige cantidad e indices 0..part_count-1;
+- exige mismo doc_id, estrategia y parent token count;
+- exige coverage contiguo desde cero;
+- remueve overlap mediante emitted/source offsets;
+- reconstruye y recuenta el padre.
+
+Si faltan todas las partes o se eliminan todos los campos hard de los registros,
+el validator no puede inferir que debia existir un grupo; esa limitacion se
+registra mas adelante como riesgo.
+
+
+13. METRICAS DE PRODUCCION Y BENCHMARK
+--------------------------------------
+
+Nombres exactos en el estado/summary:
+
+- hard_split_source_unit_count
+  Numero de chunks logicos originales >hard que fueron subdivididos. No es el
+  numero de documentos ni el numero de partes.
+
+- hard_split_generated_chunk_count
+  Numero total de partes finales generadas a partir de esos padres. No es el
+  incremento neto; para obtenerlo se resta source_unit_count.
+
+- hard_split_by_format
+  Mapa formato.casefold() -> numero de padres subdivididos.
+
+- hard_split_by_strategy
+  Mapa estrategia seleccionada -> numero de padres subdivididos.
+
+- maximum_tokens_per_chunk
+  Maximo num_tokens entre todos los registros finales. Se completa en el summary
+  final; el estado incremental comienza en None.
+
+Campos existentes relacionados:
+
+- oversized_chunk_count sigue significando chunks finales >soft, no padres hard.
+- generated_chunk_count/chunk_count incluyen todas las partes finales.
+
+PipelineDocumentProgress lleva los cuatro agregados hard por documento.
+produce_command los acumula en checkpoints y al terminar los reemplaza por los
+totales autoritativos de PipelineSummary. Cada repeticion medida del benchmark
+incluye maximo y los mismos cuatro agregados. La metodologia de warm-up,
+repeticiones y hashes no cambio.
+
+Interpretacion esperada tras el siguiente produce:
+
+- hard_split_source_unit_count deberia aproximar los 447 incompatibles del
+  baseline si el upstream permanece byte-equivalente, pero no es una promesa.
+- hard_split_generated_chunk_count debe ser mayor que source_unit_count.
+- maximum_tokens_per_chunk debe ser <=512.
+- el validate posterior debe reportar chunks_gt_hard_limit=0.
+
+
+14. COBERTURA DE TESTS Y RESULTADOS MAS RECIENTES
+-------------------------------------------------
+
+14.1 Matriz de limites
+
+test_safe_ranges_remain_byte_for_byte_intact usa un counter con prefijo de 2:
+
+- content_length 254 -> total 256.
+- 255 -> total 257.
+- 509 -> total 511 = hard-1.
+- 510 -> total 512 exacto.
+
+Todos deben retornar strategy=unchanged, una parte y texto identico.
+
+test_token_offset_fallback_covers_extreme_inputs:
+
+- 511 + prefijo 2 -> 513 = hard+1.
+- 575 + 2 -> 577.
+- 998 + 2 -> 1000.
+- 1598 + 2 -> 1600.
+- 4198 + 2 -> 4200.
+- 10237 + 2 -> 10239, mayor que 5000.
+
+No existe un caso exacto cercano a 5000; 4200 y 10239 cubren ambos lados y el
+ultimo satisface el requisito de extremo >5000.
+
+14.2 Estrategias e invariantes
+
+- CSV/tabular: hierarchy test con `|` y large structured con comas.
+- JSON: objeto pequeno y objeto grande con miembros/strings.
+- Puntuacion: First/Second/Third sentence.
+- Sin puntuacion: alpha/beta y extremo repetido `x`.
+- Unicode: `á` repetida en limites seguros usando counter por code point.
+- Overlap: overlap <=target, conteo exacto del substring y slice emitido.
+- Determinismo: dos llamadas HardSplitResult iguales y pipeline JSONL repetido.
+- Coverage/no data loss: reconstruccion de todos los rangos.
+- IDs/order/metadata: test_pipeline_subdivides_only_above_hard_limit_with_trace.
+- Fallback: strategy token_offsets en texto sin fronteras.
+- No aditividad: hidden interaction provoca regroup escalar exacto.
+- Validator: >hard invalido y parent trace incompleto invalido.
+- No truncation: todos los counters se invocan con truncation=False y los tests
+  afirman recuento real <=hard.
+
+14.3 Verificacion real-tokenizer
+
+hard_limit_synthetic_metrics.json registra:
+
+total IDs | partes | max final | max overlap | estrategia
+513       | 2      | 512       | 32          | whitespace
+577       | 2      | 512       | 32          | whitespace
+1000      | 2      | 512       | 22          | whitespace
+1600      | 4      | 512       | 32          | whitespace
+4200      | 9      | 512       | 32          | whitespace
+10239     | 21     | 512       | 32          | whitespace
+
+Todos registran coverage_preserved=true, deterministic=true,
+all_subchunks_within_hard_limit=true y stored_counts_match_recount=true.
+
+14.4 Ultima validacion de la implementacion
+
+Ejecutada al finalizar la implementacion, despues de las remediaciones de
+recuento exacto y trace agrupado:
+
+- python -m pytest tests/chunking -q
+  225 passed, 2 skipped, 35.44 s.
+
+- python -m ruff check src tests
+  All checks passed.
+
+- python -m mypy --no-incremental
+  Success: no issues found in 37 source files.
+
+Los skips fueron integraciones opcionales condicionadas por
+NERV_TEST_ENCODER_MODEL. La verificacion separada evaluate_hard_limit.py si uso
+el tokenizer real local.
+
+Estos comandos no se repitieron en la tarea REPORT-ONLY actual para evitar
+escrituras de caches y porque no hubo cambios de codigo/config/tests despues de
+esa evidencia. No se sustituyen por resultados antiguos de TokenCounter.
+
+14.5 Gaps de tests observados
+
+- No hay test focal que fuerce token_offsets no disponible y demuestre la rama
+  _largest_safe_character_end.
+- Unicode hard-split se prueba con counter sintetico; no hay extremo Unicode/
+  multilingue con el tokenizer real.
+- No hay caso dedicado de una sola celda CSV quoted >512 ni un string JSON
+  minificado >512 sin separadores estructurales.
+- No se verifica que hard_split_overlap_tokens sea igual al recuento real dentro
+  del validator; solo el helper unitario lo comprueba.
+- No hay benchmark posterior al recuento exacto adicional, deliberadamente.
+
+
+15. COMPLEJIDAD Y COSTO PROBABLE
+--------------------------------
+
+15.1 Trabajo para todos los chunks logicos
+
+- count_many de unidades para la ruta aditiva.
+- muestra de pares aditivos.
+- count_many exacto de todos los chunks logicos finales.
+- comparacion exacto vs estimado.
+- append a listas expanded y enumeracion final.
+
+El recuento exacto final es overhead nuevo para todos los chunks, incluso los
+<=512. Si return_length esta disponible reduce validacion/copia Python, pero el
+tokenizer actual puede seguir materializando input_ids internamente.
+
+15.2 Trabajo solo para padres >512
+
+- recuento adicional del padre al entrar split_hard_limited_text.
+- escaneo de separadores O(n).
+- set/sort de b fronteras: O(b log b).
+- busquedas binarias de candidatos y tokenizaciones exactas de substrings.
+- offsets/token ends si cae al fallback.
+- offsets de prefijos y recuentos para overlap por parte.
+- slices y recuento final por parte.
+
+15.3 Comportamiento cuasi-cuadratico
+
+Hay componentes que, para un texto de longitud n y k partes, vuelven a procesar
+sufijos o prefijos crecientes:
+
+- _partition_at_boundaries cuenta text[start:] al inicio de cada parte.
+- _partition_by_token_offsets hace la misma comprobacion del sufijo restante.
+- _overlap_start solicita token_offsets(text[:coverage_start]) para cada parte.
+
+La suma de esos tamanos es aproximadamente O(n*k). Como k crece alrededor de
+n/hard_window, el peor escalamiento asintotico se aproxima a O(n^2/H), ademas de
+los recuentos de busqueda. Con H=512 y n~10239 esto es manejable en la evidencia
+sintetica (21 partes), pero una unidad varios ordenes mayor puede degradarse de
+forma notable.
+
+_overlap_start tambien puede avanzar emitted_start caracter por caracter; en un
+tokenizer patologico puede realizar muchos recuentos exactos.
+
+No se observa un O(n^2) que afecte a los 335275 chunks seguros del baseline,
+pero si riesgo cuasi-cuadratico dentro de cada uno de los pocos padres extremos.
+Con solo 447/335722 padres >512, se espera que el costo dominante nuevo del
+corpus completo sea el count_many exacto universal; el costo jerarquico se
+concentra en ~0.133% de los chunks historicos.
+
+No se midio el impacto y no debe inventarse un porcentaje de slowdown.
+
+
+16. COMPORTAMIENTO DE MEMORIA
+-----------------------------
+
+La implementacion opera por documento, pero no hace streaming incremental de
+partes dentro del documento.
+
+Estructuras temporales relevantes:
+
+- lista de sentences/filas del documento;
+- lista chunks y lista chunk_token_counts;
+- para hard split, set y lista ordenada de fronteras;
+- offset_mapping completo y token_ends en fallback;
+- lista ranges;
+- tuple HardSplitPart con strings sliceados;
+- expanded_chunks, expanded_token_counts y split_metadata;
+- records finales.
+
+Los slices de string Python crean nuevos strings. Mientras _process_document
+arma la salida pueden coexistir el chunk padre y todos los textos de las partes.
+La suma de partes es aproximadamente n + overlap*(k-1), pero los recuentos crean
+substrings adicionales transitorios.
+
+TokenCounter.token_offsets solicita un BatchEncoding que normalmente contiene
+input_ids y offset_mapping; despues copia los offsets validados a una lista. El
+objeto encoded es temporal, pero durante la llamada conviven IDs y offsets.
+
+Para el caso sintetico de 10239 IDs:
+
+- un parent string;
+- aproximadamente 10239 pares de offsets en la rama token-safe;
+- un set/list de ends similar;
+- 21 rangos/partes;
+- hasta 20 overlap prefix tokenizations, cada una sobre un prefijo creciente;
+- 21 strings emitidos, mas metadata y records.
+
+No es un riesgo de memoria para 10k tokens en condiciones normales, pero la
+combinacion offsets + IDs + slices + retokenizacion de prefijos escala con la
+unidad logica extrema, no solo con el hard window.
+
+
+17. CONTRATO DOWNSTREAM
+-----------------------
+
+Despues de una produccion y validacion exitosas, embeddings/retrieval pueden
+asumir:
+
+- todo registro tiene num_tokens <= encoder_max_input_tokens;
+- num_tokens cuenta el texto efectivo con `passage: `;
+- add_special_tokens=false bajo el contrato congelado;
+- truncation no es necesaria ni debe usarse para ocultar un error;
+- `texto` no incluye `passage: `;
+- el embedding stage debe anteponer `passage: ` exactamente una vez;
+- orden, posicion, chunk_id y metadata de cada fila son deterministas para el
+  mismo input/config/codigo;
+- los campos hard_split son opcionales y pueden ignorarse si el consumidor
+  tolera campos JSON adicionales;
+- la alineacion metadata/vector debe seguir el orden final de chunks.jsonl.
+
+Cambios requeridos downstream tras regeneracion:
+
+- no reutilizar embeddings, metadata vectorial o indice FAISS anteriores;
+- regenerar todo artifact posicional porque cambia chunk_count y los IDs
+  posteriores al primer split de cada documento afectado;
+- no asumir esquema cerrado de exactamente ocho claves si el parser rechazaba
+  campos JSON adicionales;
+- preservar los campos opcionales si se copia/transforma metadata y se desea
+  auditabilidad del parent trace.
+
+La feature no modifica dimension 384, normalizacion L2, IndexFlatIP, query
+prefix ni seleccion del encoder.
+
+
+18. RIESGOS Y HALLAZGOS
+-----------------------
+
+BLOCKING
+
+- Ninguno identificado en el codigo y tests actuales para la garantia central
+  num_tokens<=512. Las defensas post-subdivision, pre-record, pre-write y
+  validate son consistentes.
+
+IMPORTANT
+
+I-1. Rendimiento del flujo completo no medido despues del recuento exacto.
+     Todos los chunks logicos reciben un count_many adicional. No hay benchmark
+     ni produce posterior, por instruccion. Puede alterar tiempo y memoria de la
+     proxima corrida aunque solo 447 padres historicos requieran subdivision.
+
+I-2. Escalamiento cuasi-cuadratico en padres extremos.
+     Recuentos de sufijos y offset mappings de prefijos repetidos suman O(n*k).
+     El caso 10239 paso, pero no hay evidencia para unidades mucho mayores.
+
+I-3. Trace removido por completo no es detectable.
+     El validator solo crea un grupo si aparece al menos un HARD_SPLIT_TRACE_FIELD.
+     Si un proceso downstream elimina todos los campos de todas las partes, los
+     bins/hard limit siguen verificandose, pero no se puede demostrar parentage
+     sin reejecutar chunking desde la fuente.
+
+I-4. Overlap declarado no se revalida completamente.
+     validate exige 0<=hard_split_overlap_tokens<=32 y reconstruye coverage,
+     pero no cuenta parent[emitted_start:source_start] para comparar con el valor
+     declarado. Un trace manipulado puede conservar coverage valida y reportar
+     un overlap incorrecto.
+
+I-5. Snapshot no pinneado por revision.
+     tokenizer_revision es null. verify_encoder_capacity comprueba capacidad,
+     no identidad/hash ni igualdad estricta. Antes de produce debe resolverse el
+     mismo snapshot local verificado y registrarse la evidencia del run.
+
+I-6. Callers directos/injectados tienen una comprobacion menos fuerte.
+     real_corpus._load_counter y pipeline.main verifican tokenizer+modelo.
+     run_pipeline con un TokenCounter inyectado solo compara el limite reportado
+     por tokenizer; no vuelve a cargar AutoConfig. Es correcto para tests, pero
+     un integrador directo debe verificar el modelo por su cuenta.
+
+MINOR
+
+M-1. Literal 512 duplicado en PipelineSummary.
+     encoder_max_input_tokens: int = 512 puede divergir del JSON si el contrato
+     cambia. La produccion actual pasa el valor explicitamente.
+
+M-2. Etiqueta `token_offsets` puede ocultar fallback por caracteres.
+     _partition_by_token_offsets atrapa ausencia/ValueError y usa offsets=[];
+     el caller registra strategy="token_offsets" aunque termine en
+     _largest_safe_character_end. La seguridad no cambia, la observabilidad si.
+
+M-3. Fallback generico puede cortar dentro de estructura quoted/string.
+     Tras fallar el scanner CSV/JSON, patrones genericos no conservan estado de
+     quotes. Coverage es exacta, pero una parte puede no ser una celda o JSON
+     standalone semanticamente limpio.
+
+M-4. Busquedas binarias suponen comportamiento practicamente monotono.
+     _partition_at_boundaries y _largest_safe_character_end usan binary search
+     sobre la condicion count<=hard. Tokenizacion subword puede tener pequeñas
+     no-monotonicidades al extender texto. Toda frontera aceptada se recuenta y
+     es segura, pero puede omitirse una frontera valida o fallar el character
+     fallback con un tokenizer no estandar. El tokenizer real y offsets reducen
+     este riesgo.
+
+M-5. Gaps de tests.
+     No-offset fallback, Unicode real extremo, celda unica y JSON long-string no
+     tienen caso focal. Existe buena cobertura sintetica general, pero no de
+     esas ramas exactas.
+
+M-6. `hard_split_generated_chunk_count` no es incremento neto.
+     El nombre puede interpretarse erroneamente; el neto es generated-source.
+
+DOCUMENTATION_ONLY
+
+D-1. PipelineSummary.oversized_sentence_chunk_count conserva un nombre historico
+     centrado en sentences aunque oversized_chunk_count puede incluir formatos
+     estructurados y partes hard finales >soft.
+
+D-2. Las limitations del validator dicen que overlap semantics no se re-evalua.
+     Es correcto en sentido estricto, pero el validator si comprueba rango y
+     coverage grupal; conviene interpretar la frase como "no se recuenta el
+     overlap efectivo", no como ausencia total de checks.
+
+
+19. READINESS PARA FULL PRODUCE
+-------------------------------
+
+VEREDICTO: READY_WITH_WARNINGS
+
+Razon:
+
+- La garantia hard tiene recuento exacto y defensas redundantes.
+- Limites 256/257/511/512/513 y extremos hasta 10239 estan cubiertos.
+- Tests, Ruff y mypy posteriores a la implementacion pasaron.
+- El auditor post-cambio no encontro bloqueantes despues de remediar recuento
+  aditivo y trace grupal.
+- No existe evidencia de rendimiento full-corpus con la nueva pasada exacta y
+  quedan riesgos no bloqueantes de trace/performance/tests.
+
+Antes de ejecutar:
+
+  python -m nerv.chunking.real_corpus produce ...
+
+debe ser cierto todo lo siguiente:
+
+1. No hubo cambios de codigo/config/tests despues de la validacion 225/2.
+   Si los hubo, repetir pytest, Ruff y mypy.
+2. El tokenizer/modelo local resuelto corresponde al snapshot revisado y vuelve
+   a reportar model_max_length=512 y max_position_embeddings=512.
+3. Se usa config/encoder_config.json schema 2 sin overrides inconsistentes.
+4. Se preserva identidad/hash del chunks.jsonl anterior o existe backup
+   recuperable antes de autorizar reemplazo.
+5. Input, output, metrics, progress y config-output son rutas distintas.
+6. El work-dir tiene espacio para el JSONL completo, temporales y publicacion.
+7. Se acepta que la corrida puede tardar mas por el recuento exacto universal.
+8. El equipo downstream sabe que IDs, chunk_count y posiciones cambiaran y no
+   reutilizara embeddings/FAISS anteriores.
+
+Despues del produce, antes de embeddings:
+
+1. ejecutar el full validate autorizado sobre el nuevo chunks.jsonl;
+2. exigir completion_status=completed y failure_count=0;
+3. exigir chunks_gt_hard_limit=0;
+4. exigir maximum_num_tokens<=512;
+5. revisar hard_split_source_unit_count, hard_split_generated_chunk_count,
+   mapas por formato/estrategia y maximum_tokens_per_chunk;
+6. confirmar IDs unicos, posiciones secuenciales y trace parent completo;
+7. conservar hashes/identidades de input, output, config y metricas.
+
+No se ejecuto produce, full validate ni benchmark durante esta tarea.
+
+
+20. CHECKLIST CORTO PARA EL SIGUIENTE OPERADOR
+----------------------------------------------
+
+[ ] Snapshot tokenizer/modelo local verificado en 512/512.
+[ ] Config schema 2, soft 256, hard 512, overlap 32.
+[ ] Suite 225 passed / 2 skipped sigue vigente o fue repetida tras cambios.
+[ ] Ruff limpio y mypy limpio.
+[ ] Backup/hash de salida anterior guardado.
+[ ] Work-dir y disco disponibles.
+[ ] Produce autorizado explicitamente.
+[ ] Full validate posterior autorizado y ejecutado.
+[ ] chunks_gt_hard_limit == 0.
+[ ] maximum_num_tokens <= 512.
+[ ] Metricas hard split revisadas.
+[ ] Embeddings/FAISS anteriores descartados antes de regenerar downstream.
+

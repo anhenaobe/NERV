@@ -1,0 +1,376 @@
+{
+  "schema_version": 2,
+  "status": "completed",
+  "generated_at": "2026-08-05T22:20:55.701460+00:00",
+  "updated_at": "2026-08-05T22:41:24.018562+00:00",
+  "resume_count": 1,
+  "current_doc_id": null,
+  "current_stage": null,
+  "environment": {
+    "python": "3.12.13 (main, Mar  3 2026, 15:01:35) [MSC v.1944 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.26200-SP0"
+  },
+  "configuration": {
+    "target_block_characters": 32768,
+    "maximum_block_characters": 65536,
+    "whole_document_timeout_seconds": 900,
+    "input_path": "outputs\\resultados\\documentos.jsonl",
+    "manifest_path": "tests\\chunking\\fixtures\\bounded_splitter_pdf_manifest.json",
+    "selected_doc_ids": [
+      "DOC-953b7532f1b5",
+      "DOC-6f41290186a5",
+      "DOC-8bd1aaf3c8d9",
+      "DOC-6891a760adbe",
+      "DOC-83e80067468b",
+      "DOC-2d7c54534744"
+    ]
+  },
+  "synthetic_comparisons": [
+    {
+      "fixture": "small",
+      "character_count": 102400,
+      "line_count": 439,
+      "detected_language": "en",
+      "whole_document_duration_seconds": 26.144016299993382,
+      "bounded_duration_seconds": 42.7317056000029,
+      "speedup_ratio": 0.6118177576322067,
+      "whole_sentence_count": 583,
+      "bounded_sentence_count": 583,
+      "whole_normalized_reconstruction_match": true,
+      "bounded_normalized_reconstruction_match": true,
+      "normalized_reconstruction_match": true,
+      "exact_sentence_list_match": true,
+      "block_count": 3,
+      "maximum_block_size": 36854,
+      "maximum_carry_size": 41164,
+      "warnings": 0,
+      "failures": []
+    },
+    {
+      "fixture": "medium",
+      "character_count": 1048576,
+      "line_count": 17335,
+      "detected_language": "en",
+      "whole_document_duration_seconds": 90.2640667000087,
+      "bounded_duration_seconds": 40.7489029999997,
+      "speedup_ratio": 2.215128753282251,
+      "whole_sentence_count": 23111,
+      "bounded_sentence_count": 23111,
+      "whole_normalized_reconstruction_match": true,
+      "bounded_normalized_reconstruction_match": true,
+      "normalized_reconstruction_match": true,
+      "exact_sentence_list_match": true,
+      "block_count": 31,
+      "maximum_block_size": 60891,
+      "maximum_carry_size": 17127,
+      "warnings": 0,
+      "failures": []
+    }
+  ],
+  "real_pdf_comparisons": [
+    {
+      "doc_id": "DOC-953b7532f1b5",
+      "format": "pdf",
+      "size_class": "small",
+      "character_count": 1064,
+      "line_count": 79,
+      "detected_language": "es",
+      "status": "completed",
+      "current_stage": null,
+      "whole_document": {
+        "status": "completed",
+        "duration_seconds": 0.020004299993161112,
+        "sentence_count": 71,
+        "normalized_reconstruction_match": true,
+        "sentence_list_digest": "ec1ab68f13465f5b2150c29a2f7fbf7c21b0b8d6014ab222530b2e9d04108b29",
+        "warnings": [],
+        "timeout_seconds": 900,
+        "error": null
+      },
+      "bounded": {
+        "status": "completed",
+        "duration_seconds": 0.03880750000826083,
+        "sentence_count": 71,
+        "normalized_reconstruction_match": true,
+        "sentence_list_digest": "ec1ab68f13465f5b2150c29a2f7fbf7c21b0b8d6014ab222530b2e9d04108b29",
+        "block_count": 1,
+        "maximum_block_size": 1064,
+        "maximum_carry_size": 0,
+        "oversized_carry_warning_count": 0,
+        "warnings": [],
+        "error": null
+      },
+      "comparison": {
+        "exact_sentence_list_match": true,
+        "normalized_reconstruction_match": true,
+        "accepted_differences": [],
+        "comparison_unavailable_reason": null,
+        "speedup_ratio": 0.5154751011763927
+      },
+      "failures": []
+    },
+    {
+      "doc_id": "DOC-6f41290186a5",
+      "format": "pdf",
+      "size_class": "small",
+      "character_count": 810,
+      "line_count": 19,
+      "detected_language": "en",
+      "status": "completed",
+      "current_stage": null,
+      "whole_document": {
+        "status": "completed",
+        "duration_seconds": 0.029014599989750423,
+        "sentence_count": 15,
+        "normalized_reconstruction_match": true,
+        "sentence_list_digest": "cdee36593f2f2448b1cad4bcfa0900f4bac4e0c2b72410d478d1f243bbe4b6a0",
+        "warnings": [],
+        "timeout_seconds": 900,
+        "error": null
+      },
+      "bounded": {
+        "status": "completed",
+        "duration_seconds": 0.09095919999526814,
+        "sentence_count": 15,
+        "normalized_reconstruction_match": true,
+        "sentence_list_digest": "cdee36593f2f2448b1cad4bcfa0900f4bac4e0c2b72410d478d1f243bbe4b6a0",
+        "block_count": 1,
+        "maximum_block_size": 810,
+        "maximum_carry_size": 0,
+        "oversized_carry_warning_count": 0,
+        "warnings": [],
+        "error": null
+      },
+      "comparison": {
+        "exact_sentence_list_match": true,
+        "normalized_reconstruction_match": true,
+        "accepted_differences": [],
+        "comparison_unavailable_reason": null,
+        "speedup_ratio": 0.3189847754956048
+      },
+      "failures": []
+    },
+    {
+      "doc_id": "DOC-8bd1aaf3c8d9",
+      "format": "pdf",
+      "size_class": "medium",
+      "character_count": 50296,
+      "line_count": 1404,
+      "detected_language": "es",
+      "status": "completed",
+      "current_stage": null,
+      "whole_document": {
+        "status": "completed",
+        "duration_seconds": 0.8642211000114912,
+        "sentence_count": 1631,
+        "normalized_reconstruction_match": false,
+        "sentence_list_digest": "a759e1ee9a54a788860259b39eb8440343e6c1e865b5c5e8375d034d8c358557",
+        "warnings": [],
+        "timeout_seconds": 900,
+        "error": null
+      },
+      "bounded": {
+        "status": "completed",
+        "duration_seconds": 2.717847400010214,
+        "sentence_count": 1631,
+        "normalized_reconstruction_match": false,
+        "sentence_list_digest": "a759e1ee9a54a788860259b39eb8440343e6c1e865b5c5e8375d034d8c358557",
+        "block_count": 1,
+        "maximum_block_size": 50296,
+        "maximum_carry_size": 0,
+        "oversized_carry_warning_count": 0,
+        "warnings": [],
+        "error": null
+      },
+      "comparison": {
+        "exact_sentence_list_match": true,
+        "normalized_reconstruction_match": false,
+        "accepted_differences": [
+          "Both methods produced the same sentence-list digest, but PySBD's output did not reconstruct the OCR source after whitespace normalization; bounded execution introduced no additional difference from the baseline."
+        ],
+        "comparison_unavailable_reason": null,
+        "speedup_ratio": 0.3179799940233007
+      },
+      "failures": []
+    },
+    {
+      "doc_id": "DOC-6891a760adbe",
+      "format": "pdf",
+      "size_class": "medium",
+      "character_count": 58342,
+      "line_count": 1157,
+      "detected_language": "pt",
+      "status": "completed",
+      "current_stage": null,
+      "whole_document": {
+        "status": "completed",
+        "duration_seconds": 0.44620790000772104,
+        "sentence_count": 1290,
+        "normalized_reconstruction_match": false,
+        "sentence_list_digest": "cec8ac898b6b12b7fc69b7fc8760123cee8c98e6b184fa45fb4c1e1b9627544d",
+        "warnings": [
+          "PySBD does not support Portuguese; Spanish rules will be used."
+        ],
+        "timeout_seconds": 900,
+        "error": null
+      },
+      "bounded": {
+        "status": "completed",
+        "duration_seconds": 1.80481050000526,
+        "sentence_count": 1290,
+        "normalized_reconstruction_match": false,
+        "sentence_list_digest": "cec8ac898b6b12b7fc69b7fc8760123cee8c98e6b184fa45fb4c1e1b9627544d",
+        "block_count": 1,
+        "maximum_block_size": 58342,
+        "maximum_carry_size": 0,
+        "oversized_carry_warning_count": 0,
+        "warnings": [
+          "PySBD does not support Portuguese; Spanish rules will be used."
+        ],
+        "error": null
+      },
+      "comparison": {
+        "exact_sentence_list_match": true,
+        "normalized_reconstruction_match": false,
+        "accepted_differences": [
+          "Both methods produced the same sentence-list digest, but PySBD's output did not reconstruct the OCR source after whitespace normalization; bounded execution introduced no additional difference from the baseline."
+        ],
+        "comparison_unavailable_reason": null,
+        "speedup_ratio": 0.24723254879469095
+      },
+      "failures": []
+    },
+    {
+      "doc_id": "DOC-83e80067468b",
+      "format": "pdf",
+      "size_class": "large",
+      "character_count": 1381071,
+      "line_count": 35247,
+      "detected_language": "en",
+      "status": "completed",
+      "current_stage": null,
+      "whole_document": {
+        "status": "completed",
+        "duration_seconds": 101.96820030000526,
+        "sentence_count": 39656,
+        "normalized_reconstruction_match": false,
+        "sentence_list_digest": "1152d213757cdff2741c99430f004d73e8ea6728f5976d7ea97071e2135db4d8",
+        "warnings": [],
+        "timeout_seconds": 900,
+        "error": null
+      },
+      "bounded": {
+        "status": "completed",
+        "duration_seconds": 17.286350400012452,
+        "sentence_count": 37915,
+        "normalized_reconstruction_match": false,
+        "sentence_list_digest": "eada831270753bdd9c585c17a8380411f351575afc4ae96bb81a62b070a8e10e",
+        "block_count": 39,
+        "maximum_block_size": 43999,
+        "maximum_carry_size": 79,
+        "oversized_carry_warning_count": 0,
+        "warnings": [],
+        "error": null
+      },
+      "comparison": {
+        "exact_sentence_list_match": false,
+        "normalized_reconstruction_match": false,
+        "accepted_differences": [],
+        "comparison_unavailable_reason": null,
+        "speedup_ratio": 5.898769719485254
+      },
+      "failures": [
+        "Whole-document and bounded sentence lists differ; the difference was not accepted automatically."
+      ]
+    },
+    {
+      "doc_id": "DOC-2d7c54534744",
+      "format": "pdf",
+      "size_class": "extreme",
+      "character_count": 3551463,
+      "line_count": 97780,
+      "detected_language": "en",
+      "status": "completed",
+      "current_stage": null,
+      "whole_document": {
+        "status": "timed_out",
+        "duration_seconds": 900.073507699999,
+        "timeout_seconds": 900,
+        "sentence_count": null,
+        "normalized_reconstruction_match": null,
+        "sentence_list_digest": null,
+        "error": null
+      },
+      "bounded": {
+        "status": "completed",
+        "duration_seconds": 86.36869210000441,
+        "sentence_count": 114847,
+        "normalized_reconstruction_match": false,
+        "sentence_list_digest": "1ea44426d841b1c67d50baa1d646d1efbe5ae69f80ebdf9d432610b3196fa57f",
+        "block_count": 103,
+        "maximum_block_size": 64647,
+        "maximum_carry_size": 39,
+        "oversized_carry_warning_count": 0,
+        "warnings": [],
+        "error": null
+      },
+      "comparison": {
+        "exact_sentence_list_match": null,
+        "normalized_reconstruction_match": false,
+        "accepted_differences": [],
+        "comparison_unavailable_reason": "Whole-document baseline timed out; exact comparison is unavailable.",
+        "speedup_ratio": null
+      },
+      "failures": [
+        "Bounded segmentation failed normalized reconstruction and no completed baseline is available to classify the difference."
+      ]
+    }
+  ],
+  "summary": {
+    "selected_document_count": 6,
+    "completed_document_count": 6,
+    "completed_baseline_doc_ids": [
+      "DOC-953b7532f1b5",
+      "DOC-6f41290186a5",
+      "DOC-8bd1aaf3c8d9",
+      "DOC-6891a760adbe",
+      "DOC-83e80067468b"
+    ],
+    "timed_out_baseline_doc_ids": [
+      "DOC-2d7c54534744"
+    ],
+    "completed_bounded_doc_ids": [
+      "DOC-953b7532f1b5",
+      "DOC-6f41290186a5",
+      "DOC-8bd1aaf3c8d9",
+      "DOC-6891a760adbe",
+      "DOC-83e80067468b",
+      "DOC-2d7c54534744"
+    ],
+    "all_completed_bounded_reconstructions_match": false,
+    "exact_match_doc_ids": [
+      "DOC-953b7532f1b5",
+      "DOC-6f41290186a5",
+      "DOC-8bd1aaf3c8d9",
+      "DOC-6891a760adbe"
+    ],
+    "bounded_fastest_doc_id": "DOC-953b7532f1b5",
+    "bounded_slowest_doc_id": "DOC-2d7c54534744"
+  },
+  "evaluation_runs": [
+    {
+      "started_at": "2026-08-05T22:20:56.044247+00:00",
+      "finished_at": "2026-08-05T22:21:04.681615+00:00",
+      "status": "error",
+      "duration_seconds": 8.637509899999714,
+      "error": "PermissionError: [WinError 5] Access is denied: 'tests\\\\chunking\\\\results\\\\.bounded_splitter_metrics.json.s68ax07y.tmp' -> 'tests\\\\chunking\\\\results\\\\bounded_splitter_metrics.json'"
+    },
+    {
+      "started_at": "2026-08-05T22:22:57.239763+00:00",
+      "finished_at": "2026-08-05T22:41:24.018562+00:00",
+      "status": "completed",
+      "duration_seconds": 1106.7790225000062
+    }
+  ],
+  "checkpoint_sequence": 12
+}

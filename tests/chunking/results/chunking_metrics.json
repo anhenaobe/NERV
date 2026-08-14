@@ -1,0 +1,230 @@
+{
+  "generated_at": "2026-07-31T03:06:18.793956+00:00",
+  "configuration": {
+    "languages": [
+      "es",
+      "en",
+      "pt"
+    ],
+    "splitter_backends": {
+      "es": "es",
+      "en": "en",
+      "pt": "es"
+    },
+    "chunker_max_counted_units": 12,
+    "overlap_evaluation_counted_units": 3,
+    "counting_unit": "palabras separadas por espacios (aproximación)"
+  },
+  "detector": {
+    "sample_count": 30,
+    "accuracy": 0.9666666666666667,
+    "confusion_matrix": {
+      "es": {
+        "es": 10,
+        "en": 0,
+        "pt": 0
+      },
+      "en": {
+        "es": 0,
+        "en": 10,
+        "pt": 0
+      },
+      "pt": {
+        "es": 1,
+        "en": 0,
+        "pt": 9
+      }
+    },
+    "ambiguous_rate": 0.03333333333333333,
+    "average_confidence": 0.8246870454092574,
+    "average_margin": 8.133333333333333,
+    "by_language": {
+      "es": {
+        "total": 10,
+        "accuracy": 1.0,
+        "ambiguous_rate": 0.0,
+        "average_confidence": 0.8581374181374182,
+        "average_margin": 6.9
+      },
+      "en": {
+        "total": 10,
+        "accuracy": 1.0,
+        "ambiguous_rate": 0.0,
+        "average_confidence": 0.9843076923076923,
+        "average_margin": 11.95
+      },
+      "pt": {
+        "total": 10,
+        "accuracy": 0.9,
+        "ambiguous_rate": 0.1,
+        "average_confidence": 0.6316160257826616,
+        "average_margin": 5.55
+      }
+    },
+    "confidence_note": "La confianza es una proporción heurística interna, no una probabilidad calibrada."
+  },
+  "splitter": {
+    "case_count": 15,
+    "exact_match_rate": 1.0,
+    "boundary_precision": 1.0,
+    "boundary_recall": 1.0,
+    "boundary_f1": 1.0,
+    "content_loss_rate": 0.0,
+    "lost_character_count": 0,
+    "by_language": {
+      "es": {
+        "case_count": 5,
+        "exact_match_rate": 1.0,
+        "boundary_precision": 1.0,
+        "boundary_recall": 1.0,
+        "boundary_f1": 1.0,
+        "content_loss_rate": 0.0,
+        "lost_character_count": 0
+      },
+      "en": {
+        "case_count": 5,
+        "exact_match_rate": 1.0,
+        "boundary_precision": 1.0,
+        "boundary_recall": 1.0,
+        "boundary_f1": 1.0,
+        "content_loss_rate": 0.0,
+        "lost_character_count": 0
+      },
+      "pt": {
+        "case_count": 5,
+        "exact_match_rate": 1.0,
+        "boundary_precision": 1.0,
+        "boundary_recall": 1.0,
+        "boundary_f1": 1.0,
+        "content_loss_rate": 0.0,
+        "lost_character_count": 0
+      }
+    }
+  },
+  "chunker": {
+    "document_count": 15,
+    "total_chunks": 16,
+    "average_counted_units_per_chunk": 9.25,
+    "minimum_counted_units": 7,
+    "maximum_counted_units": 15,
+    "exceeding_limit_rate": 0.0625,
+    "exceeding_limit_count": 1,
+    "cut_sentence_count": 0,
+    "lost_sentence_count": 0,
+    "empty_chunk_count": 0,
+    "oversized_sentence_chunk_count": 1,
+    "overlap_evaluation": {
+      "max_counted_units": 5,
+      "overlap_counted_units": 3,
+      "chunks": [
+        "Uno dos tres. Cuatro cinco.",
+        "Cuatro cinco. Seis siete.",
+        "Seis siete. Ocho nueve."
+      ],
+      "duplicated_counted_units": 4,
+      "duplicated_content_rate": 0.3076923076923077
+    },
+    "reproducible": true,
+    "by_language": {
+      "es": {
+        "documents": 5,
+        "chunks": 5
+      },
+      "en": {
+        "documents": 5,
+        "chunks": 5
+      },
+      "pt": {
+        "documents": 5,
+        "chunks": 5
+      }
+    },
+    "counting_unit": "palabras separadas por espacios (aproximación)"
+  },
+  "failed_cases": [
+    {
+      "component": "detector",
+      "sample_id": "PT-001",
+      "expected": "pt",
+      "actual": "es",
+      "is_ambiguous": true,
+      "confidence": 0.5172413793103449,
+      "margin": 1.0
+    }
+  ],
+  "by_language": {
+    "es": {
+      "detector": {
+        "total": 10,
+        "accuracy": 1.0,
+        "ambiguous_rate": 0.0,
+        "average_confidence": 0.8581374181374182,
+        "average_margin": 6.9
+      },
+      "splitter": {
+        "case_count": 5,
+        "exact_match_rate": 1.0,
+        "boundary_precision": 1.0,
+        "boundary_recall": 1.0,
+        "boundary_f1": 1.0,
+        "content_loss_rate": 0.0,
+        "lost_character_count": 0
+      },
+      "chunker": {
+        "documents": 5,
+        "chunks": 5
+      }
+    },
+    "en": {
+      "detector": {
+        "total": 10,
+        "accuracy": 1.0,
+        "ambiguous_rate": 0.0,
+        "average_confidence": 0.9843076923076923,
+        "average_margin": 11.95
+      },
+      "splitter": {
+        "case_count": 5,
+        "exact_match_rate": 1.0,
+        "boundary_precision": 1.0,
+        "boundary_recall": 1.0,
+        "boundary_f1": 1.0,
+        "content_loss_rate": 0.0,
+        "lost_character_count": 0
+      },
+      "chunker": {
+        "documents": 5,
+        "chunks": 5
+      }
+    },
+    "pt": {
+      "detector": {
+        "total": 10,
+        "accuracy": 0.9,
+        "ambiguous_rate": 0.1,
+        "average_confidence": 0.6316160257826616,
+        "average_margin": 5.55
+      },
+      "splitter": {
+        "case_count": 5,
+        "exact_match_rate": 1.0,
+        "boundary_precision": 1.0,
+        "boundary_recall": 1.0,
+        "boundary_f1": 1.0,
+        "content_loss_rate": 0.0,
+        "lost_character_count": 0
+      },
+      "chunker": {
+        "documents": 5,
+        "chunks": 5
+      }
+    }
+  },
+  "limitations": [
+    "Los fixtures son sintéticos y no representan el corpus CODEFEST.",
+    "La confianza del detector no es una probabilidad calibrada.",
+    "Portugués usa provisionalmente las reglas españolas de PySBD.",
+    "El límite del chunker usa palabras aproximadas, no tokens del encoder.",
+    "El pipeline JSONL permanece fuera del flujo evaluado."
+  ]
+}

@@ -1,0 +1,13 @@
+"""Contract tests for ingestion scaffolding."""
+
+from pathlib import Path
+
+import pytest
+
+from nerv.ingestion.readers import read_pdf
+
+
+def test_pdf_reader_is_explicitly_pending() -> None:
+    """Verify that the PDF adapter does not pretend to be implemented."""
+    with pytest.raises(NotImplementedError):
+        read_pdf(Path("corpus/raw/example.pdf"))

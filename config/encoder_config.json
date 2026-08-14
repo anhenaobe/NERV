@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "encoder_model_name": "intfloat/multilingual-e5-small",
+  "tokenizer_revision": null,
+  "embedding_dimension": 384,
+  "chunk_max_tokens": 256,
+  "encoder_max_input_tokens": 512,
+  "overlap_tokens": 32,
+  "document_prefix": "passage: ",
+  "query_prefix": "query: ",
+  "add_special_tokens": false,
+  "normalize_embeddings": true,
+  "normalization_method": "l2",
+  "future_similarity_metric": "inner_product",
+  "future_faiss_index": "IndexFlatIP",
+  "oversized_sentence_policy": "preserve_through_encoder_limit_then_hierarchical_subdivide"
+}

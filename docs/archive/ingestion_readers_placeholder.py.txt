@@ -1,0 +1,18 @@
+"""Contracts for reading supported source documents."""
+
+from pathlib import Path
+
+
+def read_pdf(path: Path) -> str:
+    """Extract text from a PDF file."""
+    raise NotImplementedError
+
+
+def read_html(path: Path) -> str:
+    """Extract text from an HTML file."""
+    raise NotImplementedError
+
+
+def read_spreadsheet(path: Path) -> str:
+    """Extract textual content from a spreadsheet file."""
+    raise NotImplementedError

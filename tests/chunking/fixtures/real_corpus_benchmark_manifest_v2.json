@@ -1,0 +1,93 @@
+{
+  "schema_version": 2,
+  "description": "Frozen representative benchmark selection for manual chunking runs. It preserves format, language, size, ambiguity, and oversized-unit coverage while excluding operationally pathological corpus extremes.",
+  "source_path": "outputs/resultados/documentos.jsonl",
+  "selection_policy": {
+    "document_count": 6,
+    "narrative_pdf_sizes": [
+      "small",
+      "medium",
+      "large"
+    ],
+    "tabular_csv_sizes": [
+      "small",
+      "large"
+    ],
+    "languages": [
+      "es",
+      "en",
+      "pt"
+    ],
+    "ambiguous_language_case": true,
+    "oversized_unit_case": true,
+    "excluded_pathological_extremes": true
+  },
+  "doc_ids": [
+    "DOC-953b7532f1b5",
+    "DOC-6891a760adbe",
+    "DOC-83e80067468b",
+    "DOC-a50c6b9e443d",
+    "DOC-32d649e20ea2",
+    "DOC-f180383827bf"
+  ],
+  "documents": [
+    {
+      "doc_id": "DOC-953b7532f1b5",
+      "format": "pdf",
+      "size_class": "small",
+      "language": "es",
+      "character_count": 1064,
+      "selection_reason": "Small Spanish narrative PDF."
+    },
+    {
+      "doc_id": "DOC-6891a760adbe",
+      "format": "pdf",
+      "size_class": "medium",
+      "language": "pt",
+      "character_count": 58342,
+      "selection_reason": "Medium Portuguese narrative PDF."
+    },
+    {
+      "doc_id": "DOC-83e80067468b",
+      "format": "pdf",
+      "size_class": "large",
+      "language": "en",
+      "character_count": 1381071,
+      "selection_reason": "Large English narrative PDF that remains practical for bounded segmentation."
+    },
+    {
+      "doc_id": "DOC-a50c6b9e443d",
+      "format": "csv",
+      "size_class": "small",
+      "language": "ambiguous_es_fallback",
+      "character_count": 1444,
+      "selection_reason": "Small tabular document with an ambiguous language decision."
+    },
+    {
+      "doc_id": "DOC-32d649e20ea2",
+      "format": "csv",
+      "size_class": "large",
+      "language": "ambiguous_es_fallback",
+      "character_count": 1242786,
+      "selection_reason": "Large but manageable tabular document with long rows."
+    },
+    {
+      "doc_id": "DOC-f180383827bf",
+      "format": "json",
+      "size_class": "medium",
+      "language": "en",
+      "character_count": 234085,
+      "oversized_unit": {
+        "confirmed": true,
+        "longest_unit_characters": 42672,
+        "longest_unit_tokens": 9175,
+        "configured_chunk_max_tokens": 256
+      },
+      "selection_reason": "English JSON document with a tokenizer-confirmed oversized unit."
+    }
+  ],
+  "excluded_documents": {
+    "DOC-2d7c54534744": "Extreme PDF excluded from the representative benchmark because prior focused evaluation showed pathological whole-document cost.",
+    "DOC-9b7f304a0986": "Largest CSV (46,714,074 characters) excluded to keep the representative run bounded."
+  }
+}

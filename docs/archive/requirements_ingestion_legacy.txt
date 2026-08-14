@@ -1,0 +1,6 @@
+beautifulsoup4
+openpyxl
+PyMuPDF
+Pillow
+pytesseract
+pytest

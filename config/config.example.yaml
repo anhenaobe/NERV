@@ -1,0 +1,24 @@
+paths:
+  raw_corpus: corpus/raw
+  processed_corpus: corpus/processed
+  queries: corpus/queries
+  outputs: outputs/resultados
+
+semantic_contract: config/encoder_config.json
+
+runtime:
+  embedding_batch_size: 32
+  device: cpu
+
+faiss:
+  index_path: entrega/base_vectorial/index.faiss
+  metadata_path: entrega/base_vectorial/metadata.jsonl
+  embedding_path: outputs/embeddings.npy
+  embedding_manifest_path: outputs/embeddings.manifest.json
+
+retrieval:
+  top_k: 10
+
+logging:
+  level: INFO
+  directory: outputs/logs
