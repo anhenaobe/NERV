@@ -1,0 +1,515 @@
+NERV REV B - PERFORMANCE PROFILE BEFORE OPTIMIZATION
+====================================================
+
+Report date: 2026-08-15 (America/Bogota)
+Branch: perf/rev-b
+Baseline/current HEAD: 25ff615ff8d0fcc59aa8eef962a404e679ce241e
+Scope: profiling, static audit and bounded experiments only
+Full fresh E2E: NOT RUN
+Production artifacts overwritten: NONE
+Semantic-contract changes: NONE
+
+1. EXECUTIVE VERDICT
+--------------------
+
+The only optimization ready for implementation is length-bucketed document
+embedding with explicit restoration to canonical row order, using batch 32 as
+the measured candidate and batch 16 as the reference/fallback.
+
+On 2048 uniformly sampled real chunks, bucketed batch 32 improved encode-only
+throughput from 226.863539 to 316.321737 vectors/s (1.394326x), reduced padding
+tokens from 113007 to 7807 (93.09%), used about 1.02 GiB peak reserved CUDA
+memory, and preserved all bounded correctness checks. A conservative additive
+projection that holds the observed non-encode production overhead constant
+estimates 6.97 minutes saved, reducing the 126.97-minute E2E baseline to about
+120.00 minutes.
+
+The strict target <120 minutes is NOT YET SUPPORTED: the point estimate is
+120.0019 minutes and benchmark/system variance is larger than that margin.
+Targets <105 and <90 minutes are unsupported without a proven ingestion change.
+
+OCR is the dominant measured ingestion cost, but no safe OCR configuration or
+parallelism change passed a comparative quality benchmark. PySBD/sentence
+splitting dominates the bounded chunking sample, but no faster semantically
+equivalent candidate was measured. Neither should be implemented yet.
+
+2. VALIDATED BASELINE
+---------------------
+
+Documents: 1761
+Chunks: 335393
+Maximum stored tokens: 510
+Encoder: intfloat/multilingual-e5-small
+Embedding dimension: 384
+Document prefix: "passage: "
+Query prefix: "query: "
+Normalization: L2
+FAISS: IndexFlatIP
+
+Compute-equivalent E2E: 7618.215329 s = 126.970255 min
+Ingestion: 4089.325900 s = 68.155432 min (~53.7% E2E)
+Chunking: 1168.050386 s = 19.467506 min (~15.3% E2E)
+Embeddings: 2343.712950 s = 39.061883 min (~30.8% E2E)
+FAISS: 13.230082 s
+Official retrieval: 5.663346 s
+
+3. PREVIOUS SESSION RECOVERY
+----------------------------
+
+Recovered branch perf/rev-b at the frozen baseline commit. The previous session
+left one untracked instrumentation file, scripts/profile_rev_b.py, and ignored
+JSON evidence under outputs/performance/rev_b. No Rev B report or continuation
+checkpoint existed. Existing OCR, ingestion and chunking measurements were
+inspected and preserved; none was repeated.
+
+Continuation checkpoint:
+docs/performance/rev_b_continuation_status.txt
+
+Machine-readable evidence:
+outputs/performance/rev_b/corpus_audit.json
+outputs/performance/rev_b/selected_pdf_ocr_profile.json
+outputs/performance/rev_b/ingestion_workers_1.json
+outputs/performance/rev_b/chunking_profile.json
+outputs/performance/rev_b/embedding_profile.json
+
+4. INGESTION BREAKDOWN
+----------------------
+
+Production baseline: 4089.325900 s for 1840 discovered inputs and 1761 output
+documents. Raw inventory contains 1849 files: 760 PDF, 964 JSON, 26 CSV, 6
+XLSX, 73 PBF, 8 JPG, 1 AVIF, 1 TXT and ignored/auxiliary files.
+
+Bounded 22-file representative subset:
+
+First pass: 25.294100 s
+Pending-OCR files: 4
+OCR second pass: 133.560471 s
+Total: 158.854720 s
+Second-pass share: 84.08%
+Output: 16 documents, 6 incidents, 2 fail-closed mixed-PDF OCR failures
+
+The subset included native, mixed and fully OCR PDFs, images, JSON, CSV, XLSX,
+PBF and TXT. It produced 4 PDF, 3 CSV, 3 XLSX, 2 JSON, 2 PBF, 1 image and 1
+TXT document. Per-format wall-time mean/median/p95, normalization time and
+filesystem I/O are NOT MEASURED because the current production reader exposes
+only corpus-level timing and adding cross-process per-call instrumentation would
+materially expand this profiling change.
+
+5. OCR BREAKDOWN
+----------------
+
+Six selected PDFs: 309 pages total; 31 successfully OCRed pages plus 4 attempted
+mixed-PDF pages that returned no usable text.
+
+Selected PDF total: 126.923405 s
+Tesseract: 119.878331 s (94.45%)
+PDF rendering: 4.476931 s (3.53%)
+Native extraction plus post-processing: 2.568142 s (2.02%)
+
+Slowest selected PDF:
+
+ALERTAS_informes035.pdf
+29 pages, fully OCR
+Total 113.883659 s
+Rendering 3.761351 s
+Tesseract 110.023675 s
+Other/native/post-processing 0.098633 s
+
+The exact OCR share of the 4089.325900-second production baseline is NOT
+MEASURED. Extrapolating the 94.45% selected-PDF ratio to all ingestion would be
+invalid because the full stage also contains 1684 non-OCR inputs and scheduling,
+normalization, hashing and I/O.
+
+Image OCR is present in the sample, but isolated image-OCR runtime statistics
+are NOT MEASURED. One image produced text; two were empty incidents.
+
+6. INGESTION PARALLELISM
+------------------------
+
+Workers 1: 158.854720 s, measured
+Workers 2: NOT RUN
+Workers 3: NOT RUN
+Workers 4: NOT RUN
+
+The original stop rule prohibited increasing concurrency after OCR failures.
+Two mixed PDFs failed closed at one worker because their empty pages produced no
+usable OCR text. These failures are not attributed to concurrency, but they
+trigger the stop condition. No speedup claim is made.
+
+CPU utilization: NOT MEASURED
+Peak RAM: NOT MEASURED
+Live Tesseract concurrency: NOT MEASURED
+Reason: psutil is absent from the fixed environment and installing dependencies
+was outside the authorized profiling scope.
+
+Reference deterministic hashes for a future controlled human benchmark:
+
+Documents:
+506D9FE84AF6AF8E39AC2D811F85A3FA5FB9C57D084078634D44AA1F52F3F703
+Incidents:
+E235E560C65FC537394B8B661C890502153CDCC3134A9B6A76F72894205EBC3A
+
+HUMAN BENCHMARK REQUIRED before any ingestion worker-count change.
+
+7. PDF/OCR DUPLICATED WORK
+--------------------------
+
+The accepted ingestion cache proves 156 PDFs used usar_ocr=true. The two-pass
+orchestrator first scans those PDFs with OCR disabled, then reopens each pending
+PDF and repeats native extraction before rendering only empty pages for OCR.
+
+Full PDFs scanned twice: 156
+Full pages scanned twice: NOT MEASURED
+Bounded pending PDFs scanned twice: 4, totaling 209 pages
+
+For the four bounded pending PDFs, repeated native extraction plus associated
+post-processing was approximately 1.107454 s, versus 119.878331 s in Tesseract
+and 4.476931 s rendering. Even treating all 1.107454 s as removable gives only
+0.70% of the 158.854720-second ingestion subset. Eliminating duplicated cheap
+work is therefore LOW ROI relative to OCR and is not recommended now.
+
+8. TESSERACT CONFIGURATION
+--------------------------
+
+DPI: 220
+Languages per OCR call: spa+eng+por+chi_sim
+PDF render: PyMuPDF Matrix(220/72, 220/72), alpha=false
+Image mode presented to OCR: RGB or L; other modes converted to RGB
+Tesseract version: 5.5.3.20260724
+OEM: default (no explicit --oem)
+PSM: default (no explicit --psm)
+Local tessdata: used through TESSDATA_PREFIX when C:\dev\NERV\tessdata exists
+
+Every OCR page loads the four configured language models. This is a plausible
+high-value target because Tesseract dominated the selected PDF runtime, but no
+character-retention/page-coverage/corruption comparison was run. Language or
+DPI changes are NOT READY FOR IMPLEMENTATION.
+
+HUMAN BENCHMARK REQUIRED: compare current four-language configuration against
+source-informed language selection on a human-reviewed ES/EN/PT/Chinese sample.
+
+9. CHUNKING BREAKDOWN
+---------------------
+
+Bounded real sample: 13 documents, 1881 chunks, 23.578744 s pipeline wall time.
+
+Approximate summed per-document spans:
+
+Language detection: 0.010511 s (~0.04%)
+Sentence splitting/PySBD: 20.096400 s (~85.2%)
+Chunking/tokenizer/hard limit/overlap: 3.208163 s (~13.6%)
+Record construction: 0.003338 s (~0.01%)
+JSONL writing: 0.175203 s (~0.74%)
+Other setup/publication: ~0.085129 s (~0.36%)
+
+Hard splitting, tokenizer calls and overlap assembly are included in the single
+chunking span and were not separately instrumented. Validation was not inside
+this bounded production timing.
+
+Slowest sampled document: DOC-11581ed96481, JSON, 430140 characters, 480
+chunks, 12.210118 s total; 11.965016 s was sentence splitting.
+
+10. LANGUAGE DETECTOR COST
+--------------------------
+
+Measured total: approximately 0.010511 s across 13 documents.
+Mean: 0.000809 s/document
+Median: 0.000343 s/document
+P95: 0.002412 s/document
+Maximum: 0.003219 s/document
+
+Removing Portuguese detection cannot materially improve this sample. Preserve
+document_language=pt even when splitter_language=es. Recommendation: REJECT
+language-semantics simplification as a performance optimization.
+
+11. PYSBD COST
+--------------
+
+Sentence splitting is the dominant bounded chunking span: 20.096400 s out of
+23.578744 s. The two largest documents spent 11.965016 s and 6.848952 s in
+splitting. This identifies the hotspot but does not prove a safe alternative.
+
+No splitter replacement, block-size change or format-specific bypass was
+benchmarked. Any change could alter sentence boundaries, overlap and chunk IDs.
+Status: HIGH-VALUE FOLLOW-UP PROFILE, NOT READY FOR IMPLEMENTATION.
+
+12. CHUNKING PARALLELISM
+------------------------
+
+Workers 1: measured by the canonical serial pipeline.
+Workers 2/4: BLOCKED BY PROFILING-ONLY SCOPE.
+
+The frozen branch contains only Phase-1 parallel_pipeline.py with
+PHASE_1_WORKER_COUNT=1. Running 2/4 workers requires implementing an experimental
+pipeline, which this task explicitly does not authorize. No current-Rev-B
+speedup, RAM or determinism claim is made.
+
+13. TOKEN LENGTH DISTRIBUTION
+-----------------------------
+
+Measured by streaming all 335393 accepted chunks:
+
+Minimum: 5
+P25: 149
+Median: 173
+P75: 249
+P90: 255
+P95: 256
+P99: 329
+Maximum: 510
+
+This distribution, not merely the 2048-row benchmark sample, supports the
+padding analysis. The high 75th-to-99th percentile spread explains why adjacent
+canonical chunks can cause material padding in sequential batches.
+
+14. EMBEDDING PADDING ANALYSIS
+------------------------------
+
+Definition: for each batch, max(num_tokens + 2 special tokens) times batch rows,
+minus the sum of actual num_tokens + 2.
+
+Uniform 2048-row real sample:
+
+Sequential batch 16: 113007 padding tokens
+Bucketed batch 16: 3551 (96.86% reduction)
+Bucketed batch 24: 3791 (96.65% reduction)
+Bucketed batch 32: 7807 (93.09% reduction)
+
+Batch 32 has more padding than bucketed 16/24 because each group is wider, but
+its higher GPU batch efficiency still produced the best wall time.
+
+15. LENGTH BUCKETING
+--------------------
+
+All variants used the exact same 2048 chunks. Bucketed encodes were written
+back to their original sample indices before comparison.
+
+Sequential batch 16: 9.027453 s, 226.863539 vectors/s
+Bucketed batch 16: 7.460886 s, 274.498230 vectors/s, 1.209971x
+Bucketed batch 24: 7.211449 s, 283.992848 vectors/s, 1.251822x
+Bucketed batch 32: 6.474421 s, 316.321737 vectors/s, 1.394326x
+
+GPU utilization was NOT MEASURED during the timed interval. A post-run
+nvidia-smi snapshot showed 3% utilization and is not evidence of timed use.
+
+16. BATCH SIZE RESULTS
+----------------------
+
+Peak Torch CUDA memory:
+
+Variant                  Allocated bytes   Reserved bytes
+Sequential batch 16         622388224         780140544
+Bucketed batch 16           622388224         782237696
+Bucketed batch 24           634503680         895483904
+Bucketed batch 32           762813952        1096810496
+
+All fit well within the RTX 4050 Laptop GPU's reported 6141 MiB VRAM during the
+bounded run. Larger batch is not assumed safe for production until the full
+artifact path is validated; batch 32 is only the Rev B candidate.
+
+17. EMBEDDING CORRECTNESS
+-------------------------
+
+All four outputs:
+
+- rows: 2048
+- dimension: 384
+- original chunk-to-row mapping restored
+- finite: PASS
+- L2 normalized: PASS
+- strict allclose versus sequential: PASS at rtol=1e-5, atol=1e-5
+- maximum absolute vector difference: <= 8.9406967e-08
+
+Bounded retrieval comparison:
+
+- queries: 16 sampled texts encoded with the canonical query prefix
+- candidate matrix: the same 2048 document embeddings
+- top-k: 10
+- differing queries for bucketed 16/24/32: 0
+- maximum score difference: 2.3841858e-07
+- ranking verdict: IDENTICAL for every variant
+
+This proves bounded semantic equivalence; it does not replace a full artifact
+lineage, FAISS and official-query validation after implementation.
+
+18. OPTIONAL FP16
+-----------------
+
+NOT MEASURED. Length bucketing already supplied a safe candidate and FP16 would
+add a separate numerical/precision variable. FP16 is not recommended in this
+Rev B implementation round.
+
+19. TOP BOTTLENECKS
+-------------------
+
+1. Ingestion/OCR: 4089.325900 s production baseline. In the selected PDFs,
+   Tesseract was 94.45% of PDF time; exact full-stage OCR attribution is unknown.
+2. Embeddings: 2343.712950 s. The bounded encode path is much faster than
+   production, and sequential padding is material.
+3. Chunking/PySBD: 1168.050386 s. Sentence splitting was ~85.2% of the bounded
+   sample, concentrated in large narrative-like documents.
+4. FAISS/retrieval: seconds; no optimization work justified.
+
+20. ROI TABLE
+-------------
+
+Candidate: length bucketing + batch 32 + canonical row restoration
+Measured: 1.394326x encode-only; 93.09% padding reduction
+Projected embedding stage: 1925.61 s (32.09 min)
+Projected E2E saving: 6.97 min
+Complexity: medium
+Correctness risk: low if row restoration and artifact lineage fail closed
+Validation cost: high (full fresh artifacts after human approval)
+Class: MEDIUM ROI / LOW RISK
+
+Candidate: length bucketing, retain batch 16
+Measured: 1.209971x encode-only
+Projected embedding stage: 2087.16 s (34.79 min)
+Projected E2E saving: 4.28 min
+Complexity: medium
+Correctness risk: low
+Validation cost: high
+Class: MEDIUM ROI / LOW RISK; fallback, not preferred
+
+Candidate: preserve first-pass PDF native extraction for OCR pass
+Measured removable upper bound in subset: ~1.11 s / 158.85 s
+Full-stage saving: NOT DERIVABLE; likely small relative to OCR
+Complexity: medium
+Correctness risk: medium (partial-state ownership and failure semantics)
+Validation cost: high
+Class: LOW ROI
+
+Candidate: remove Portuguese language detection
+Measured detector cost: ~0.0105 s / 23.58 s sample
+Estimated E2E saving: negligible
+Complexity: low
+Correctness risk: high semantic regression
+Class: REJECT
+
+Candidate: increase ingestion OCR workers
+Measured speedup: NOT MEASURED
+CPU/RAM/concurrency evidence: NOT MEASURED
+Class: REJECT UNTIL HUMAN BENCHMARK
+
+Candidate: reduce OCR languages/DPI
+Measured speedup/quality: NOT MEASURED
+Potential: high because Tesseract dominates sampled PDF time
+Correctness risk: high without retained-text review
+Class: HIGH POTENTIAL / NOT READY
+
+Candidate: PySBD replacement/bypass
+Measured alternative: NONE
+Potential: material within chunking only
+Correctness risk: high because boundaries and IDs may change
+Class: NOT READY
+
+Projection method for embedding candidates:
+
+- isolated sequential encode estimate: 335393 / 226.863539 = 1478.39 s;
+- inferred production non-encode overhead: 2343.71 - 1478.39 = 865.32 s;
+- candidate encode estimate: 335393 / candidate vectors/s;
+- projected stage = unchanged 865.32 s overhead + candidate encode estimate.
+
+The 865.32-second gap is inferred, not directly instrumented. Code inspection
+shows full-source identity/hash passes, exact token recount, per-batch input
+validation/retokenization, JSON parsing, memmap writing, flush/fsync, rehash and
+manifest publication. Their individual shares are NOT MEASURED.
+
+21. RECOMMENDED OPTIMIZATIONS
+-----------------------------
+
+Recommend exactly ONE implementation candidate:
+
+Length-bucketed embedding generation with batch 32 and canonical row restore.
+
+Files/modules likely affected:
+
+- src/nerv/embeddings/artifacts.py
+- tests/embeddings/test_artifacts.py (or nearest existing artifact tests)
+- tests/embeddings/test_embedding_generator.py where appropriate
+- pipeline/report metadata for explicit ordering strategy and batch evidence
+
+Expected speedup: 1.394326x for encode-only bounded work
+Estimated E2E saving: approximately 6.97 minutes
+Semantic risk: low only if every output row remains bound to the original
+ordered chunk ID and existing immutable publication semantics remain unchanged
+
+Required post-implementation validation:
+
+1. focused unit tests for stable bucketing, duplicate lengths, final partial
+   batch, exceptions and row restoration;
+2. sequential-versus-bucketed exact chunk-ID mapping;
+3. 384 columns, float32, finite, L2 normalized and strict numerical tolerance;
+4. byte-identical ordered chunk-ID hash and matching source-chunk SHA-256;
+5. bounded FAISS top-k and official-query ranking comparison;
+6. Ruff, canonical mypy and full unit suite;
+7. only after human approval, one fresh candidate artifact followed by full
+   artifact/FAISS/retrieval validation without overwriting the accepted release.
+
+22. OPTIMIZATIONS NOT WORTH IMPLEMENTING
+----------------------------------------
+
+- Removing Portuguese detection: negligible measured cost and semantic harm.
+- Eliminating the cheap duplicated native PDF scan now: small bounded saving,
+  nontrivial lifecycle/error-state change.
+- FAISS or retrieval tuning: negligible stage contribution.
+- FP16, ONNX, TensorRT, quantization, encoder replacement, dimension changes or
+  alternate FAISS indexes: unmeasured and outside Rev B.
+- Blindly increasing OCR or chunking workers: missing safety/determinism/resource
+  evidence.
+
+23. EXPECTED OPTIMIZED E2E RANGE
+--------------------------------
+
+With the single recommended embedding change:
+
+Point estimate: 7200.115103 s = 120.001918 min
+Realistic bounded range: approximately 120-123 min
+
+<120 min: NOT YET REALISTIC from current evidence
+<105 min: NOT REALISTIC from current evidence
+<90 min: NOT REALISTIC from current evidence
+
+A safe OCR improvement could change these conclusions materially, but no such
+candidate has correctness evidence in this pass.
+
+24. EXACT NEXT IMPLEMENTATION PLAN
+----------------------------------
+
+1. Implement a separate bucket-order planner in the embedding artifact layer.
+   Inputs: canonical row index and verified num_tokens. Output: batches of row
+   indices ordered by stable (num_tokens, original_index).
+2. Keep the existing immutable memmap shape and write each encoded vector to its
+   original canonical row. Never publish a sorted matrix.
+3. Record strategy="length_bucketed", batch size and bounded evidence in the
+   manifest/report without changing semantic configuration.
+4. Retain the current sequential path as reference/fallback for tests and
+   diagnosis.
+5. Run the validation sequence in section 21. Do not merge, overwrite the
+   accepted artifacts or launch a full fresh run until the human approves this
+   one implementation candidate.
+
+HUMAN-ONLY FOLLOW-UP (not part of implementation): prepare a small labeled OCR
+quality corpus and compare language selection/default DPI. Do this before any
+OCR configuration or worker-count change.
+
+VALIDATION RECORD
+-----------------
+
+Passed:
+
+- profile script Python compilation;
+- Ruff check and Ruff format check;
+- focused profiler mypy with strict mode and imports skipped;
+- 78 focused tests passed, 2 model-gated tests skipped;
+- git diff whitespace check;
+- all 24 required report sections present.
+
+INCONCLUSIVE:
+
+- canonical mypy src generador.py was stopped after 60 seconds with no output.
+  It returned neither findings nor a successful result.
+
+NOT RUN:
+
+- full test suite and every full production/E2E path, by explicit scope.

@@ -376,7 +376,7 @@ class IngestaTests(unittest.TestCase):
                         usar_ocr=False
                     )
 
-    def test_pdf_mixto_con_fallo_ocr_falla_sin_publicar_parcial(self):
+    def test_pdf_mixto_con_pagina_sin_texto_conserva_contenido_util(self):
         doc = FakeDocument([
             FakePage("Primera"),
             FakePage(""),
@@ -390,21 +390,20 @@ class IngestaTests(unittest.TestCase):
                 "_leer_ocr_pagina_pdf",
                 side_effect=["", "[Pagina 3]\nTercera"]
             ) as ocr:
-                with self.assertRaisesRegex(
-                    ValueError,
-                    "paginas sin texto recuperable por OCR: 2"
-                ):
-                    lector.leer_pdf(
-                        Path("mixto.pdf"),
-                        diagnostico=diagnostico
-                    )
+                texto = lector.leer_pdf(
+                    Path("mixto.pdf"),
+                    diagnostico=diagnostico
+                )
 
         self.assertEqual(ocr.call_count, 2)
+        self.assertIn("Primera", texto)
+        self.assertIn("Tercera", texto)
+        self.assertNotIn("[Pagina 2]", texto)
         self.assertEqual(diagnostico["paginas_nativas"], 1)
         self.assertEqual(diagnostico["paginas_ocr"], 1)
         self.assertEqual(diagnostico["paginas_sin_texto"], 1)
 
-    def test_procesar_corpus_registra_fallo_ocr_parcial(self):
+    def test_procesar_corpus_publica_pdf_con_texto_util_parcial(self):
         with tempfile.TemporaryDirectory() as tmp:
             corpus = Path(tmp)
             carpeta = corpus / "F1_demo"
@@ -427,12 +426,26 @@ class IngestaTests(unittest.TestCase):
                         max_procesos_pesados=1
                     )
 
-        self.assertEqual(documentos, [])
-        self.assertEqual(len(errores), 1)
-        self.assertEqual(errores[0]["estado"], "fallido")
-        self.assertIn("paginas sin texto recuperable", errores[0]["error"])
-        self.assertEqual(estadisticas["procesados"], 0)
-        self.assertEqual(estadisticas["fallidos"], 1)
+        self.assertEqual(len(documentos), 1)
+        self.assertIn("Texto nativo", documentos[0]["texto"])
+        self.assertEqual(errores, [])
+        self.assertEqual(estadisticas["procesados"], 1)
+        self.assertEqual(estadisticas["fallidos"], 0)
+
+    def test_pdf_mixto_con_excepcion_ocr_falla_claramente(self):
+        doc = FakeDocument([FakePage("Texto nativo"), FakePage("")])
+
+        with mock.patch.object(lector, "fitz", FakeFitz(doc)):
+            with mock.patch.object(
+                lector,
+                "_leer_ocr_pagina_pdf",
+                side_effect=ValueError("Fallo de OCR: runtime roto")
+            ):
+                with self.assertRaisesRegex(
+                    ValueError,
+                    "Fallo de OCR: runtime roto"
+                ):
+                    lector.leer_pdf(Path("mixto.pdf"))
 
     def test_imagen_con_texto_y_sin_texto_mediante_mock(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -603,6 +616,63 @@ class IngestaTests(unittest.TestCase):
         estados = {error["estado"] for error in errores}
         self.assertIn("omitido", estados)
         self.assertIn("fallido", estados)
+
+    def test_procesar_corpus_excluye_evaluacion_anidada_sin_excluir_xlsx_normal(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            corpus = Path(tmp)
+            carpeta = corpus / "F3_Dinamicas_Territoriales"
+            carpeta.mkdir()
+
+            auxiliar = carpeta / "FASE ORDENADA CODEFEST.xlsx"
+            wb_auxiliar = Workbook()
+            wb_auxiliar.active.append(["PREGUNTA", "FRAGMENTO", "DOCUMENTO"])
+            wb_auxiliar.active.append(["pregunta sintetica", "texto", "fuente"])
+            wb_auxiliar.save(auxiliar)
+
+            normal = carpeta / "fuente_legitima.xlsx"
+            wb_normal = Workbook()
+            wb_normal.active.title = "Datos"
+            wb_normal.active.append(["nombre", "valor"])
+            wb_normal.active.append(["fuente legitima", 1])
+            wb_normal.save(normal)
+
+            consulta_oficial = corpus / "Extracto_Preguntas_50_v2.pdf"
+            consulta_oficial.write_bytes(b"contenido sintetico no parseable")
+
+            documentos, errores, estadisticas = lector.procesar_corpus(
+                corpus,
+                ruta_cache=None,
+            )
+
+        self.assertEqual(
+            [documento["fuente"] for documento in documentos],
+            ["F3_Dinamicas_Territoriales/fuente_legitima.xlsx"],
+        )
+        self.assertIn("fuente legitima", documentos[0]["texto"])
+        errores_por_archivo = {error["archivo"]: error for error in errores}
+        self.assertEqual(
+            errores_por_archivo[
+                "F3_Dinamicas_Territoriales/FASE ORDENADA CODEFEST.xlsx"
+            ]["estado"],
+            "omitido",
+        )
+        self.assertIn(
+            "auxiliar",
+            errores_por_archivo[
+                "F3_Dinamicas_Territoriales/FASE ORDENADA CODEFEST.xlsx"
+            ]["error"],
+        )
+        self.assertEqual(
+            errores_por_archivo["Extracto_Preguntas_50_v2.pdf"]["estado"],
+            "omitido",
+        )
+        self.assertEqual(len(errores), 2)
+        self.assertEqual(estadisticas["encontrados"], 3)
+        self.assertEqual(estadisticas["procesados"], 1)
+        self.assertEqual(estadisticas["omitidos"], 2)
+        self.assertEqual(estadisticas["fallidos"], 0)
 
     def test_pdf_sin_ocr_se_registra_como_pendiente_ocr(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -1,0 +1,239 @@
+NERV REV B - CONTINUATION STATUS
+================================
+
+Checkpoint date: 2026-08-15 (America/Bogota)
+Repository: C:\dev\NERV
+Current branch: perf/rev-b
+Baseline commit: 25ff615ff8d0fcc59aa8eef962a404e679ce241e
+Current HEAD: 25ff615ff8d0fcc59aa8eef962a404e679ce241e
+Main was not modified or checked out during profiling.
+
+1. WORKING TREE
+---------------
+
+At recovery, the only modified/untracked source file was:
+
+- scripts/profile_rev_b.py (untracked bounded profiling collector)
+
+This checkpoint and the final report were missing at recovery. Large benchmark
+outputs are intentionally ignored under outputs/performance/rev_b.
+
+2. EXISTING PROFILING ARTIFACTS
+-------------------------------
+
+Ignored evidence directory:
+
+outputs/performance/rev_b
+
+Recovered artifacts:
+
+- corpus_audit.json
+- selected_pdf_ocr_profile.json
+- ingestion_workers_1.json
+- chunking_sample_documents.jsonl
+- chunking_sample_output.jsonl
+- chunking_profile.json
+- chunking_work/ (isolated work directory)
+
+No validated production artifact was overwritten.
+
+3. VALIDATED BASELINE
+---------------------
+
+Documents: 1761
+Chunks: 335393
+Maximum stored tokens: 510
+Encoder: intfloat/multilingual-e5-small
+Dimension: 384
+Document/query prefixes: "passage: " / "query: "
+Normalization: L2
+FAISS: IndexFlatIP
+
+Compute-equivalent E2E: 7618.215329 s
+Ingestion: 4089.325900 s
+Chunking: 1168.050386 s
+Embeddings: 2343.712950 s
+FAISS: 13.230082 s
+Official retrieval: 5.663346 s
+
+4. COMPLETED WORK
+-----------------
+
+Corpus/PDF audit (bounded):
+
+- Inventory: 1849 files, including 760 PDFs.
+- Accepted ingestion cache contains 759 PDF entries.
+- 156 PDFs are marked usar_ocr=true and therefore entered the OCR pass.
+- Eight OCR-pass PDFs were natively scanned for bounded classification:
+  5 mixed PDFs and 3 fully OCR PDFs; 427 pages total, including 58 pages
+  without native text.
+- A corpus-wide native page scan was deliberately stopped because it would
+  materially repeat the production ingestion stage.
+
+Selected PDF/OCR profile:
+
+- Production configuration verified: 220 DPI and spa+eng+por+chi_sim.
+- PyMuPDF renders RGB with alpha=false.
+- No explicit OEM or PSM option is supplied; Tesseract defaults apply.
+- Six PDFs measured: 2 native, 2 mixed and 2 fully OCR.
+- Fully OCR 29-page PDF: 113.883659 s total, 3.761351 s rendering,
+  110.023675 s Tesseract.
+- Fully OCR 2-page PDF: 6.837175 s total, 0.577561 s rendering,
+  6.241232 s Tesseract.
+- Mixed PDFs spent 2.806162 s and 0.807262 s in Tesseract, but their empty
+  pages remained unrecoverable and the production reader failed closed.
+
+Ingestion benchmark, one worker:
+
+- Deterministic 22-file subset covering native/mixed/OCR PDFs, images, JSON,
+  CSV, XLSX, PBF and TXT.
+- First pass: 25.294100 s.
+- Four pending-OCR PDFs.
+- OCR second pass: 133.560471 s.
+- Total: 158.854720 s.
+- Output: 16 documents and 6 incidents; two mixed-PDF OCR failures.
+- Canonical document hash:
+  506D9FE84AF6AF8E39AC2D811F85A3FA5FB9C57D084078634D44AA1F52F3F703
+- Canonical error hash:
+  E235E560C65FC537394B8B661C890502153CDCC3134A9B6A76F72894205EBC3A
+- The escalation to 2/3/4 workers was stopped after OCR failures appeared, per
+  the original stop condition. CPU utilization, peak RAM and live Tesseract
+  process counts were not measured because the fixed environment lacks psutil.
+
+Chunking profile, serial bounded sample:
+
+- 13 documents, 1881 chunks, 23.578744 s.
+- Language detection total is approximately 0.010511 s (0.045% of summed
+  per-document time); Portuguese detection is not a meaningful target.
+- Sentence splitting/PySBD total is approximately 20.096400 s (85.5%).
+- Chunking/tokenizer/hard-limit/overlap total is approximately 3.208163 s
+  (13.7%).
+- Record construction total is approximately 0.003338 s.
+- JSONL writing total is approximately 0.175203 s (0.75%).
+- Slowest sampled document: 430140-character JSON, 12.210118 s, of which
+  11.965016 s was sentence splitting.
+- Current src/nerv/chunking/parallel_pipeline.py is Phase 1 with
+  PHASE_1_WORKER_COUNT = 1. A 2/4-worker benchmark is not runnable without
+  implementing an optimization, which is outside profiling-only scope.
+
+5. REQUIREMENT RECONCILIATION
+-----------------------------
+
+[PARTIAL] A. Ingestion profiling
+  OCR/native/render/Tesseract and two-pass timing are measured on a bounded
+  subset. Full format-level mean/median/p95 and filesystem I/O are not measured.
+
+[PARTIAL / STOPPED] B. Ingestion parallelism
+  One worker measured. Higher counts stopped after OCR failures. CPU/RAM/process
+  monitoring is unavailable in the fixed environment.
+
+[PARTIAL] C. PDF/OCR architecture
+  156 PDFs are proven to enter the second pass; selected measurements separate
+  repeated native work from OCR. Full page count and full-stage extrapolation
+  remain unavailable without a broad rescan.
+
+[COMPLETE STATIC / PARTIAL EXPERIMENT] D. Tesseract configuration
+  DPI, languages, RGB/alpha rendering and default OEM/PSM behavior inspected.
+  No language/DPI quality experiment has been run.
+
+[COMPLETE BOUNDED] E. Chunking profiling
+  Stage breakdown and language detector cost measured on 13 real documents.
+
+[BLOCKED BY PROFILING-ONLY SCOPE] F. Chunking parallelism
+  Only a one-worker Phase-1 implementation exists on frozen main.
+
+[COMPLETE BOUNDED] G. Embedding profiling
+  Full 335393-row token distribution and a uniform 2048-row CUDA sample measured.
+
+[COMPLETE BOUNDED] H. Length bucketing
+  Sequential batch 16 and bucketed batches 16/24/32 measured on CUDA.
+
+[COMPLETE BOUNDED] I. Embedding correctness
+  Row restoration, shape/finiteness/L2, strict numerical tolerance and 16-query
+  top-10 ranking comparison passed for every variant.
+
+[NOT STARTED / OPTIONAL] J. FP16
+  May be skipped after length bucketing if ROI/risk does not justify it.
+
+6. NEXT PRIORITY
+----------------
+
+Complete docs/performance/rev_b_performance_profile.txt from measured artifacts.
+Do not rerun ingestion, chunking or embedding evidence already captured. Label
+all missing evidence explicitly.
+
+7. EXACT BOUNDED COMMANDS
+-------------------------
+
+CUDA interpreter:
+
+C:\Users\justa\.codex\tmp\nerv-phase2-cuda128\Scripts\python.exe
+
+Required source provenance for every command:
+
+$env:PYTHONPATH=(Resolve-Path -LiteralPath 'src').Path
+
+Embedding-only continuation (2048 uniformly sampled real chunks):
+
+& 'C:\Users\justa\.codex\tmp\nerv-phase2-cuda128\Scripts\python.exe' `
+  scripts\profile_rev_b.py `
+  --output-dir outputs\performance\rev_b `
+  --skip-audit `
+  --skip-pdf-read-profile `
+  --skip-chunking `
+  --embedding-sample 2048
+
+Expected new artifact:
+
+outputs/performance/rev_b/embedding_profile.json
+
+Interpretation requirements:
+
+- compare sequential batch 16 with bucketed 16/24/32;
+- require original-index restoration, 384 columns, finite/L2 vectors and strict
+  allclose evidence;
+- do not infer full-stage savings from throughput alone without accounting for
+  the production artifact's full-source validation and I/O passes.
+
+8. EMBEDDING RESULT RECOVERED AFTER CHECKPOINT
+----------------------------------------------
+
+- Full token distribution: min 5, p25 149, median 173, p75 249, p90 255,
+  p95 256, p99 329, max 510.
+- Sequential batch 16: 9.027453 s, 226.863539 vectors/s, 113007 padding
+  tokens, 780140544 peak reserved CUDA bytes.
+- Bucketed batch 16: 7.460886 s, 274.498230 vectors/s, 3551 padding tokens.
+- Bucketed batch 24: 7.211449 s, 283.992848 vectors/s, 3791 padding tokens.
+- Bucketed batch 32: 6.474421 s, 316.321737 vectors/s, 7807 padding tokens,
+  1096810496 peak reserved CUDA bytes.
+- All variants: 2048 x 384, finite, L2-normalized, original rows restored,
+  maximum absolute difference <= 8.9406967e-08 and allclose at rtol/atol 1e-5.
+- Sixteen bounded queries produced identical top-10 rankings for every variant;
+  maximum score difference was 2.3841858e-07.
+- FP16 was not run.
+
+9. VALIDATION STATUS
+--------------------
+
+Passed:
+
+- python -m py_compile scripts\profile_rev_b.py
+- ruff check scripts\profile_rev_b.py
+- ruff format --check scripts\profile_rev_b.py
+- mypy --strict --follow-imports=skip --ignore-missing-imports
+  scripts\profile_rev_b.py
+- focused pytest: 78 passed, 2 skipped in 3.09 s
+  (tests/ingestion/test_ingestion.py, tests/chunking/test_pipeline.py and
+  tests/test_embeddings.py)
+- git diff --check
+
+Not completed:
+
+- Canonical mypy src generador.py was stopped after 60 seconds without output.
+  It produced neither a type finding nor a PASS result, so its status is
+  INCONCLUSIVE. The profiler-only mypy check passed.
+
+Not run by design:
+
+- full pytest suite
+- full fresh ingestion/chunking/embeddings/FAISS/E2E

@@ -85,6 +85,11 @@ ARCHIVOS_AUXILIARES = {
         "Archivo auxiliar de preguntas del corpus"
 }
 
+RUTAS_AUXILIARES = {
+    "f3_dinamicas_territoriales/fase ordenada codefest.xlsx":
+        "Archivo auxiliar de evaluacion del corpus"
+}
+
 EXTENSIONES_SOPORTADAS = {
     ".pdf",
     ".csv",
@@ -849,11 +854,10 @@ def _leer_ocr_pagina_pdf(pagina, numero_pagina, archivo):
         return ""
 
     except ValueError as error:
-        print(
+        raise ValueError(
             f"{archivo.name}: fallo OCR en pagina "
             f"{numero_pagina}: {error}"
-        )
-        return ""
+        ) from error
 
 
 def _texto_nativo_util(texto: str) -> bool:
@@ -864,7 +868,6 @@ def leer_pdf(archivo, usar_ocr=True, diagnostico=None):
     paginas = []
     paginas_sin_texto = []
     paginas_con_texto = 0
-    paginas_ocr_fallidas = []
 
     if fitz is None:
         raise ValueError(
@@ -952,16 +955,6 @@ def leer_pdf(archivo, usar_ocr=True, diagnostico=None):
                         diagnostico["paginas_ocr"] += 1
                 elif diagnostico is not None:
                     diagnostico["paginas_sin_texto"] += 1
-
-                if not texto_ocr:
-                    paginas_ocr_fallidas.append(numero_pagina)
-
-    if paginas_ocr_fallidas:
-        paginas = ", ".join(str(numero) for numero in paginas_ocr_fallidas)
-        raise ValueError(
-            "PDF con paginas sin texto recuperable por OCR: "
-            f"{paginas}"
-        )
 
     resultado = "\n\n".join(
         pagina
@@ -1900,6 +1893,10 @@ def procesar_corpus(
         ruta_relativa = archivo.relative_to(
             carpeta_corpus
         ).as_posix()
+        ruta_relativa_normalizada = unicodedata.normalize(
+            "NFC",
+            ruta_relativa
+        ).casefold()
 
         if (
             rutas_incluidas is not None
@@ -1909,10 +1906,17 @@ def procesar_corpus(
 
         estadisticas["encontrados"] += 1
 
-        if (
-            archivo.parent == carpeta_corpus
-            and nombre_normalizado in ARCHIVOS_AUXILIARES
-        ):
+        motivo_auxiliar = RUTAS_AUXILIARES.get(
+            ruta_relativa_normalizada
+        )
+
+        if archivo.parent == carpeta_corpus:
+            motivo_auxiliar = ARCHIVOS_AUXILIARES.get(
+                nombre_normalizado,
+                motivo_auxiliar
+            )
+
+        if motivo_auxiliar is not None:
             print(
                 f"{archivo.name}: archivo auxiliar omitido"
             )
@@ -1921,7 +1925,7 @@ def procesar_corpus(
                 errores,
                 ruta_relativa,
                 "omitido",
-                ARCHIVOS_AUXILIARES[nombre_normalizado]
+                motivo_auxiliar
             )
 
             estadisticas["omitidos"] += 1

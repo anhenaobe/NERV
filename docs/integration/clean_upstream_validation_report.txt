@@ -1,0 +1,157 @@
+CLEAN UPSTREAM VALIDATION REPORT
+
+1. RUN ID
+20260815-215729-clean-upstream
+
+2. FIX VALIDATION
+PASS: explicit relative-path exclusion was bounded-tested before this run.
+
+3. RAW INPUT STATUS
+path=C:\dev\NERV\corpus\raw
+manifest_status=completed
+git_commit=25ff615ff8d0fcc59aa8eef962a404e679ce241e
+git_dirty=True
+
+4. DOCUMENT COUNT
+1676 (expected 1760)
+EXPECTED_DOCUMENT_COUNT_MISMATCH
+
+5. DOCUMENT HASH
+246D7583AE52C1BEC17AD750BB32261C6A8E52AF580B55431195871DF96E1DA8
+
+6. DOCUMENT SOURCE DELTA
+added: (none)
+removed: F1_IA_y_Capacidades_Estrategicas/AI_Index_Stanford/recursos/Annual_Reports/pdfs/AIINDEX_hai-annual-report-2024-2025.pdf, F1_IA_y_Capacidades_Estrategicas/CENIA/pdfs/CENIA_convenio-eqy250001-cenia-eqy250001-30264-compressed.pdf, F1_IA_y_Capacidades_Estrategicas/CSET_Georgetown/pdfs/Reports/CSET_center-for-security-and-emerging-technology-4.pdf, F1_IA_y_Capacidades_Estrategicas/DAIO/daio_pdfs/pdfs/DAIO_beware-the-hype.pdf, F1_IA_y_Capacidades_Estrategicas/ILIA_Latam/pdfs/ILIA_2025/ILIA_2025-executive-summary.pdf, F1_IA_y_Capacidades_Estrategicas/ILIA_Latam/pdfs/ILIA_2025/ILIA_2025.-fichas-de-pais-y-aspectos-metodologicos.pdf, F1_IA_y_Capacidades_Estrategicas/ILIA_Latam/pdfs/ILIA_2025/ILIA_docuemnto-ilia-web.pdf, F1_IA_y_Capacidades_Estrategicas/ILIA_Latam/pdfs/ILIA_2025/ILIA_documento-ilia-2025.pdf, F1_IA_y_Capacidades_Estrategicas/RutaN_GEIAL/pdfs/Observatorio/RUTAN_s2200488-es.pdf, F2_Seguridad_Entorno_Espacial/CSIS_Aerospace/pdfs_full/Otros/CSIS_190313-spaceportsoftheworld.pdf, F2_Seguridad_Entorno_Espacial/CSIS_Aerospace/pdfs_full/Otros/CSIS_2022-national-defense-strategy-npr-mdr.pdf, F2_Seguridad_Entorno_Espacial/CSIS_Aerospace/pdfs_full/Otros/CSIS_2024-dod-commercial-space-integration-strategy.pdf, F2_Seguridad_Entorno_Espacial/CSIS_Aerospace/pdfs_full/Otros/CSIS_allardcommission.pdf, F2_Seguridad_Entorno_Espacial/CSIS_Aerospace/pdfs_full/Otros/CSIS_fy-2019-uscg-congressional-justification.pdf, F2_Seguridad_Entorno_Espacial/CSIS_Aerospace/pdfs_full/Otros/CSIS_fy2019-presidents-budget-nasa.pdf, F2_Seguridad_Entorno_Espacial/CSIS_Aerospace/pdfs_full/Otros/CSIS_fy2024-budget-request-overview-book.pdf, F2_Seguridad_Entorno_Espacial/CSIS_Aerospace/pdfs_full/Otros/CSIS_rumsfeldcommission.pdf, F2_Seguridad_Entorno_Espacial/ESA_Space_Debris/pdfs/Articulos/ESA_st-space-49e.pdf, F2_Seguridad_Entorno_Espacial/SWF_Counterspace/pdfs/Counterspace_Reports/SWF_2023-executive-summary-english.pdf, F2_Seguridad_Entorno_Espacial/SWF_Counterspace/pdfs/Counterspace_Reports/SWF_2024-executive-summary-chinese.pdf, F2_Seguridad_Entorno_Espacial/SWF_Counterspace/pdfs/Counterspace_Reports/SWF_2025-es-counterspace-eng.pdf, F2_Seguridad_Entorno_Espacial/SWF_Counterspace/pdfs/Counterspace_Reports/SWF_2025-executive-summary-arabic.pdf, F2_Seguridad_Entorno_Espacial/SWF_Counterspace/pdfs/Counterspace_Reports/SWF_2025-executive-summary-chinese.pdf, F2_Seguridad_Entorno_Espacial/SWF_Counterspace/pdfs/Counterspace_Reports/SWF_2025-executive-summary-french.pdf, F2_Seguridad_Entorno_Espacial/SWF_Counterspace/pdfs/Counterspace_Reports/SWF_2025-executive-summary-russian.pdf, F2_Seguridad_Entorno_Espacial/SWF_Counterspace/pdfs/Counterspace_Reports/SWF_2025-executive-summary-spanish.pdf, F2_Seguridad_Entorno_Espacial/SWF_Counterspace/pdfs/Counterspace_Reports/SWF_69cffd06bb49a754a728c08d-2019-global-counterspace-capabilities-an-open-source-assessme.pdf, F2_Seguridad_Entorno_Espacial/SWF_Counterspace/pdfs/Counterspace_Reports/SWF_global-counterspace-capabilities-2025.pdf, F2_Seguridad_Entorno_Espacial/SWF_Counterspace/pdfs/Otros/SWF_685567ad2a80d36b0b5a15ef-copuos-briefing-book-russian-web.pdf, F2_Seguridad_Entorno_Espacial/SWF_Counterspace/pdfs/Otros/SWF_685567ae7ac5278ddcb2dc68-copuos-briefing-book-spanish-web.pdf, F2_Seguridad_Entorno_Espacial/SWF_Counterspace/pdfs/Otros/SWF_69d00cb41bf6510b78f7de95-2017-french-handbook-for-new-actors.pdf, F2_Seguridad_Entorno_Espacial/SWF_Counterspace/pdfs/Otros/SWF_copuos-briefing-book-2025-eng-web.pdf, F2_Seguridad_Entorno_Espacial/SWF_Counterspace/pdfs/Otros/SWF_copuos-briefing-book-2025-fre-web.pdf, F2_Seguridad_Entorno_Espacial/SWF_Counterspace/pdfs/Otros/SWF_publication-final-english-june2021.pdf, F2_Seguridad_Entorno_Espacial/UNOOSA/pdfs/2021/UNOOSA_annual-report-2021.pdf, F2_Seguridad_Entorno_Espacial/UNOOSA/pdfs/2021/UNOOSA_st-space-75rev01e.pdf, F2_Seguridad_Entorno_Espacial/UNOOSA/pdfs/2022/UNOOSA_annual-report-2022.pdf, F2_Seguridad_Entorno_Espacial/UNOOSA/pdfs/2023/UNOOSA_st-space-073e.pdf, F2_Seguridad_Entorno_Espacial/UNOOSA/pdfs/2023/UNOOSA_st-space-085e.pdf, F2_Seguridad_Entorno_Espacial/UNOOSA/pdfs/2024/UNOOSA_st-space-088a.pdf, F2_Seguridad_Entorno_Espacial/UNOOSA/pdfs/2024/UNOOSA_st-space-088c.pdf, F2_Seguridad_Entorno_Espacial/UNOOSA/pdfs/2024/UNOOSA_st-space-088e.pdf, F2_Seguridad_Entorno_Espacial/UNOOSA/pdfs/2024/UNOOSA_st-space-088f.pdf, F2_Seguridad_Entorno_Espacial/UNOOSA/pdfs/2024/UNOOSA_st-space-088r.pdf, F2_Seguridad_Entorno_Espacial/UNOOSA/pdfs/2024/UNOOSA_st-space-088s.pdf, F2_Seguridad_Entorno_Espacial/UNOOSA/pdfs/2025/UNOOSA_st-space-089e.pdf, F2_Seguridad_Entorno_Espacial/UNOOSA/pdfs/2025/UNOOSA_st-space-095e.pdf, F2_Seguridad_Entorno_Espacial/UNOOSA/pdfs/2025/UNOOSA_st-space-096e.pdf, F2_Seguridad_Entorno_Espacial/UNOOSA/pdfs/2025/UNOOSA_st-space-61rev03e.pdf, F2_Seguridad_Entorno_Espacial/UNOOSA/pdfs/2025/UNOOSA_st-space-61rev03r.pdf, F2_Seguridad_Entorno_Espacial/UNOOSA/pdfs/2025/UNOOSA_st-space-61rev03s.pdf, F2_Seguridad_Entorno_Espacial/UNOOSA/pdfs/Otros/UNOOSA_performance-standards-guidelines-v2.0-final.pdf, F3_Dinamicas_Territoriales/CEOBS/pdfs_full/2026/CEOBS_2026032506514742771268534.pdf, F3_Dinamicas_Territoriales/FASE ORDENADA CODEFEST.xlsx, F3_Dinamicas_Territoriales/MAPP_OEA/pdfs/2008/MAPPOEA_2008-la-memoria-como-forma-de-resistencia-de-los-arhuacos.pdf, F3_Dinamicas_Territoriales/MAPP_OEA/pdfs/2008/MAPPOEA_2008-las-madres-de-la-candelaria.pdf, F3_Dinamicas_Territoriales/MAPP_OEA/pdfs/2008/MAPPOEA_2008-una-experiencia-de-justicia-comunitaria-conciliemos.pdf, F3_Dinamicas_Territoriales/MAPP_OEA/pdfs/2011/MAPPOEA_2011-identidad-e-imagenes.-sabaletas-un-pueblo-con-memoria-1-compressed.pdf, F3_Dinamicas_Territoriales/MAPP_OEA/pdfs/2013/MAPPOEA_2013-plan-de-choque-para-la-restitucion-y-formalizacion-de-tierras-en-col.-compressed.pdf, F3_Dinamicas_Territoriales/MAPP_OEA/pdfs/2014/MAPPOEA_2014-conversatorios-sobre-restitucion-de-tierras-y-territorios-compressed.pdf, F3_Dinamicas_Territoriales/MAPP_OEA/pdfs/2016/MAPPOEA_2016-la-prueba-social-y-de-contexto.pdf, F3_Dinamicas_Territoriales/MAPP_OEA/pdfs/2023/MAPPOEA_revista-mappoea-15-anos-hechos-de-paz-1pag-1.pdf, F3_Dinamicas_Territoriales/RESDAL/pdfs/Atlas_2024/RESDAL_0-esp-primeraslaregion.pdf, F3_Dinamicas_Territoriales/RESDAL/pdfs/Atlas_2024/RESDAL_atlas-2024-esp.pdf, F3_Dinamicas_Territoriales/RESDAL/pdfs/Atlas_Anteriores/RESDAL_atlas-completo-2.pdf, F3_Dinamicas_Territoriales/RESDAL/pdfs/Atlas_Anteriores/RESDAL_atlas-completo2010-ingles.pdf, F3_Dinamicas_Territoriales/SIPRI/pdfs_full/2025/SIPRI_0725-military-and-security-dimensions-of-quantum-technologies-0.pdf, F3_Dinamicas_Territoriales/SIPRI/pdfs_full/2025/SIPRI_0825-ai-military-bias.pdf, F3_Dinamicas_Territoriales/SIPRI/pdfs_full/2025/SIPRI_1125-civilian-ai.pdf, F3_Dinamicas_Territoriales/SIPRI/pdfs_full/2025/SIPRI_2509-towards-multilateral-policy-on-aws-1.pdf, F3_Dinamicas_Territoriales/SIPRI/pdfs_full/2025/SIPRI_laws-v-0.pdf, F3_Dinamicas_Territoriales/SIPRI/pdfs_full/2025/SIPRI_pragmatic-approaches-to-governance-at-the-ai-nuclear-nexus.pdf, F3_Dinamicas_Territoriales/SIPRI/pdfs_full/2026/SIPRI_0226-milai-procurement-260216.pdf, F3_Dinamicas_Territoriales/SIPRI/pdfs_full/2026/SIPRI_0226-milai-procurement-kr.pdf, F3_Dinamicas_Territoriales/SIPRI/pdfs_full/2026/SIPRI_0226-rpp-chinese-perspectives-chinese.pdf, F3_Dinamicas_Territoriales/SIPRI/pdfs_full/2026/SIPRI_0326-calibrating-deterrence.pdf, F3_Dinamicas_Territoriales/SIPRI/pdfs_full/2026/SIPRI_0326-preventing-biological-weapons-proliferation-0.pdf, F3_Dinamicas_Territoriales/SIPRI/pdfs_full/2026/SIPRI_0626-building-an-effective-infrastructure-for-peace-in-syria-and-lebanon.pdf, F3_Dinamicas_Territoriales/SIPRI/pdfs_full/2026/SIPRI_0626-transitions-just-future.pdf, F3_Dinamicas_Territoriales/SIPRI/pdfs_full/2026/SIPRI_2602-ai-integration.pdf, F3_Dinamicas_Territoriales/SIPRI/pdfs_full/2026/SIPRI_gendered-dimensions-of-climate-related-security-risks.pdf, F3_Dinamicas_Territoriales/SIPRI/sipri_data/pdfs/SIPRI_2021.pdf, F3_Dinamicas_Territoriales/SIPRI/sipri_data/pdfs/SIPRI_20240212113627.pdf, F3_Dinamicas_Territoriales/SIPRI/sipri_data/pdfs/SIPRI_att-monitor-report-2025.pdf, F3_Dinamicas_Territoriales/SIPRI/sipri_data/pdfs/SIPRI_djokic-ignjatijevic-2020-why-are-people-leaving-the-serbian-defence-system.pdf
+
+7. EXCLUDED AUXILIARY FILES
+accounted: Extracto_Preguntas_50_v2.pdf, F3_Dinamicas_Territoriales/FASE ORDENADA CODEFEST.xlsx, Indice_Datos_Codefest.xlsx
+missing: (none)
+
+8. DOCUMENT CONTAMINATION CHECK
+confirmed:
+(none)
+suspicious:
+(none)
+
+9. CHUNK COUNT
+316206 (expected 335371)
+EXPECTED_CHUNK_COUNT_MISMATCH
+
+10. CHUNK HASH
+E001BF5AFDBC781D1E771A7CB804F92462219D9164803C11860827682251345E
+
+11. MAX TOKENS
+510 (required <= 510)
+
+12. CHUNK CONTRACT VALIDATION
+canonical_exit=0
+duplicate_chunk_id_count=0
+unknown_document_count=0
+empty_chunk_count=0
+token_count_mismatch_count=0
+encoder_hard_limit_exceeded_count=0
+hard_split_metadata_error_count=0
+position_error_count=0
+document_order_error_count=0
+failure_count=0
+
+13. CHUNK CONTAMINATION CHECK
+confirmed:
+(none)
+suspicious:
+(none)
+
+14. EXPECTED VS ACTUAL DELTA
+document_delta=-84
+chunk_delta=-19165
+per-document chunk deltas vs contaminated lineage:
+- DOC-00be53d27185: -402 chunks
+- DOC-0299fb7e4907: -136 chunks
+- DOC-0605875b3bf5: -281 chunks
+- DOC-0a30b6f999df: -1036 chunks
+- DOC-0a5f040eab40: -38 chunks
+- DOC-0d8c7fb0d5b5: -171 chunks
+- DOC-0f278edbdc5d: -471 chunks
+- DOC-0fe25e87bc17: -33 chunks
+- DOC-11e5695c26a7: -185 chunks
+- DOC-1346c2eee795: -23 chunks
+- DOC-1840c3f6c333: -583 chunks
+- DOC-1ad646b128d8: -71 chunks
+- DOC-24a0f0342693: -31 chunks
+- DOC-25ff3488042f: -274 chunks
+- DOC-26d28722eb60: -237 chunks
+- DOC-28bb930733b3: -215 chunks
+- DOC-29474c9d9b4b: -278 chunks
+- DOC-29b13e7c2ee5: -1191 chunks
+- DOC-3b8dd8e2808a: -899 chunks
+- DOC-3f824c7c070a: -124 chunks
+- DOC-3fbe72879808: -39 chunks
+- DOC-462db978475a: -274 chunks
+- DOC-472d9e706b4d: -235 chunks
+- DOC-4823339198fa: -131 chunks
+- DOC-4cd480ca4f48: -285 chunks
+- DOC-50e4573e1f5d: -104 chunks
+- DOC-58310260f9de: -130 chunks
+- DOC-5a36897ce025: -101 chunks
+- DOC-5b04e0ebda84: -125 chunks
+- DOC-62e483b74b94: -14 chunks
+- DOC-679ed36cbaca: -578 chunks
+- DOC-6c3f280d5b4d: -51 chunks
+- DOC-7109bc145704: -46 chunks
+- DOC-733e9efe5273: -508 chunks
+- DOC-75d498989cdc: -91 chunks
+- DOC-76de9fa634ef: -162 chunks
+- DOC-78253b25dea6: -194 chunks
+- DOC-7b804d4ecc53: -279 chunks
+- DOC-7c3b71e21f8f: -49 chunks
+- DOC-7e599d6be496: -100 chunks
+- DOC-7f2d35adaf50: -156 chunks
+- DOC-83f50dfdc679: -341 chunks
+- DOC-840421ddec8e: -52 chunks
+- DOC-8404f327336c: -244 chunks
+- DOC-872912aa3349: -222 chunks
+- DOC-87ca290a8504: -30 chunks
+- DOC-885adbe8b4bc: -72 chunks
+- DOC-8a9a77e73d02: -50 chunks
+- DOC-8b1ed8c4fe1a: -89 chunks
+- DOC-923a8048bea6: -133 chunks
+- DOC-955e1f5b162b: -40 chunks
+- DOC-98bfd02302aa: -143 chunks
+- DOC-9bd4e00495ae: -236 chunks
+- DOC-9c3acbb70f8b: -231 chunks
+- DOC-9ce2e29bf75f: -16 chunks
+- DOC-a36eec1d92bb: -18 chunks
+- DOC-aa27aeb63fc9: -50 chunks
+- DOC-ad18d76cfafd: -1202 chunks
+- DOC-b4c484554b8e: -22 chunks
+- DOC-b7bda24e3fac: -31 chunks
+- DOC-b90505f6b460: -150 chunks
+- DOC-b9bef0af47c9: -106 chunks
+- DOC-bcfc791bc449: -444 chunks
+- DOC-bf26842b3ba1: -224 chunks
+- DOC-c164bbb69b4c: -85 chunks
+- DOC-c1fc7e26636c: -369 chunks
+- DOC-c4798d41294f: -25 chunks
+- DOC-c5afb0183b7f: -34 chunks
+- DOC-c93eba44547d: -100 chunks
+- DOC-ca9ef999370e: -83 chunks
+- DOC-cd67690e6d92: -578 chunks
+- DOC-d3981b1e51bf: -45 chunks
+- DOC-d982ff3ce868: -12 chunks
+- DOC-da323e0ec1d0: -173 chunks
+- DOC-e06d41949585: -1687 chunks
+- DOC-e190382dec4d: -123 chunks
+- DOC-eca7c5e28f8f: -296 chunks
+- DOC-eebfc7f955ad: -89 chunks
+- DOC-f3d7f24c8fd9: -32 chunks
+- DOC-f57e3243a57c: -174 chunks
+- DOC-f695701f8dc7: -412 chunks
+- DOC-f80e892ddd1d: -157 chunks
+- DOC-fcf84d1e946b: -85 chunks
+- DOC-ff365b1457ab: -102 chunks
+- DOC-fffe6b791e42: -49 chunks
+review_reasons: EXPECTED_DOCUMENT_COUNT_MISMATCH; EXPECTED_CHUNK_COUNT_MISMATCH; document source delta differs from the audited removal
+fail_reasons: (none)
+
+15. FINAL GATE
+CLEAN_UPSTREAM_NEEDS_HUMAN_REVIEW
