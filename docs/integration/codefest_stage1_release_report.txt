@@ -98,10 +98,13 @@ or modified by this release task.
 
 PUBLICATION
 -----------
-Release content commit: TO_BE_RECORDED
-Release content push: TO_BE_RECORDED
-Publication report commit: TO_BE_RECORDED
-Publication report push: TO_BE_RECORDED
+Release content commit: 98D2A442EB9E4ACFB5075DDF2272ED41CF7905E9
+Release content push: FAIL. The execution environment rejected outbound export
+to the configured GitHub remote because ownership/trust of that destination
+could not be established by its approval gate. No retry or bypass was used.
+Publication report commit: local metadata commit following the release content
+commit; see repository HEAD.
+Publication report push: NOT ATTEMPTED after the explicit export rejection.
 
 FINAL VERDICT
 -------------
