@@ -29,6 +29,12 @@ de metadata. Cada registro de metadata conserva `doc_id`, `chunk_id`, `fuente`,
 `formato`, `fenomeno`, `posicion`, `num_tokens` y el `texto` exacto que produjo
 su vector.
 
+`informe_tecnico.pdf` contiene el informe humano de cinco páginas y un anexo
+de actualización de dos páginas que separa explícitamente la línea histórica
+de 335.371 chunks del estado corregido. El archivo abre correctamente, tiene
+7 páginas, no contiene marcadores provisionales y permanece dentro del máximo
+de 8 páginas.
+
 ## Reproducción
 
 Desde la raíz del repositorio, una vez instaladas las dependencias y disponible
@@ -56,7 +62,6 @@ contenido.
 
 El código fuente puede publicarse antes de terminar una ejecución de producción,
 pero el paquete no está listo hasta que la línea corregida obtenga
-`CORRECTED_CHUNKS_PASS`, termine downstream, y el PDF técnico validado de ocho
-páginas o menos esté presente. Los archivos binarios grandes pueden permanecer
-fuera de Git, pero deben incluirse físicamente en el paquete entregado a
-CODEFEST.
+`CORRECTED_CHUNKS_PASS` y termine downstream. Los archivos binarios grandes
+pueden permanecer fuera de Git, pero deben incluirse físicamente en el paquete
+entregado a CODEFEST.

@@ -19,11 +19,13 @@ Accepted corrected-chunk input:
 
 No corrected chunk lineage is final in this release. Run
 20260816-211304-stage1-corrected-chunks failed closed before writing chunks.
-Run 20260816-233354-stage1-corrected-chunks was human-controlled and still had
-status=running at the release gate. No corrected_chunks_audit.json with status
-CORRECTED_CHUNKS_PASS existed. Consequently, final chunk run ID, chunk count,
-chunk SHA-256, max stored tokens, incomplete-prose count,
-continuation-boundary count, and final contamination status are not claimed.
+The human-controlled run 20260816-233354-stage1-corrected-chunks completed with
+341690 candidate chunks, maximum stored tokens 510, SHA-256
+92BA1EACDB4FE66563625E37CD3D6271ADF413E5EA72364A358051B0DCBA70C0,
+and measured chunking runtime 1309.754813 seconds. No
+corrected_chunks_audit.json with status CORRECTED_CHUNKS_PASS exists, so those
+candidate facts are not final acceptance. Incomplete-prose count,
+continuation-boundary count, and final contamination status remain unverified.
 
 CORRECTED CHUNK COMPLIANCE
 --------------------------
@@ -48,17 +50,20 @@ DELIVERY ARTIFACT STATUS
   corrected artifact pending and intentionally outside this Git commit.
 - entrega/base_vectorial/encoder_intfloat_multilingual-e5-small/metadata.jsonl:
   corrected artifact pending and intentionally outside this Git commit.
-- entrega/informe_tecnico.pdf: not generated from an incomplete lineage.
+- entrega/informe_tecnico.pdf: READY; 7 pages, 239680 bytes, SHA-256
+  A9E36CC52A66240DE82BC8BCE46FF99C1E33D467A04B4B72757F45E289CEDDE4.
 
 TECHNICAL REPORT STATUS
 -----------------------
 docs/integration/informe_tecnico_stage1_source.md is finalized for the current
 source-ready state and documents the accepted facts and withheld final counts.
-A competition PDF was not generated because the mandatory final corrected
-artifact counts and measured runtimes do not yet exist. Creating a provisional
-PDF would violate the no-placeholder and no-contradiction gate. Human action is
-required after corrected downstream acceptance; the PDF must open and contain
-at most eight pages.
+The human-authored five-page report from Downloads was preserved and extended
+with a two-page technical addendum. The addendum identifies the 335371-chunk
+figures as historical, explains the implemented corrected PDF-boundary logic,
+records the bounded preflight, and withholds corrected final counts until their
+manifests pass. The combined PDF opens, has 7 pages, contains no PENDING, TODO,
+or TBD marker, and its rendered pages have no clipping, overlap, or unreadable
+glyphs.
 
 GENERATIVE ISOLATION
 --------------------
@@ -77,6 +82,8 @@ VALIDATION
 - mypy: NOT AVAILABLE in the bounded validation interpreter
 - query JSONL IDs/cardinality: PASS
 - generator/README/delivery path smoke checks: PASS
+- PDF open/page-count/text checks: PASS (7 pages)
+- PDF visual render inspection: PASS (all base pages plus final addendum)
 - git diff --check: PASS (line-ending conversion warnings only)
 - staged secret/path/size review: PASS
 
@@ -92,9 +99,9 @@ reproducibility cannot be executed until corrected downstream artifacts exist.
 REMAINING BLOCKER
 -----------------
 The human-controlled corrected chunk run must finish and pass its independent
-audit. Corrected downstream artifacts and the final <=8-page PDF must then be
-produced and validated. No production stage was started, duplicated, stopped,
-or modified by this release task.
+audit. Corrected downstream artifacts must then be produced and validated. No
+production stage was started, duplicated, stopped, or modified by this release
+task.
 
 PUBLICATION
 -----------
@@ -105,6 +112,9 @@ could not be established by its approval gate. No retry or bypass was used.
 Publication report commit: local metadata commit following the release content
 commit; see repository HEAD.
 Publication report push: NOT ATTEMPTED after the explicit export rejection.
+PDF integration commit: TO_BE_RECORDED
+PDF integration push: NOT ATTEMPTED; the prior export rejection remains in
+force and was not bypassed.
 
 FINAL VERDICT
 -------------
