@@ -1,0 +1,57 @@
+CLEAN CORPUS + CLEAN CHUNKING REGENERATION
+
+NEXT HUMAN-EXECUTED TASK
+
+CLEAN CORPUS + CLEAN CHUNKING REGENERATION
+
+Purpose:
+Regenerate accepted documents and chunks after excluding exactly
+F3_Dinamicas_Territoriales/FASE ORDENADA CODEFEST.xlsx. This plan is not
+executed by the current task.
+
+CONTAMINATED ARTIFACTS THAT MUST NOT BE REUSED
+
+- outputs/runs/20260813-145837-fresh-9187d9a4/artifacts/documentos.jsonl
+- outputs/runs/20260813-145837-fresh-9187d9a4/artifacts/chunks.jsonl
+- every embeddings file or manifest derived from those chunks
+- every FAISS index or manifest derived from those embeddings
+- outputs/runs/20260813-174237-resume-fresh-86514215/official_results.jsonl
+- outputs/evaluation/retrieval_manual_eval.csv
+
+STAGES TO REGENERATE
+
+1. Run clean full-corpus ingestion into a new run directory.
+2. Verify the excluded workbook is recorded as intentionally omitted and is
+   absent from published documents.
+3. Run clean chunking from the newly accepted documents into the same new run.
+4. Validate the new documents and chunks before any embedding work.
+5. After a separate human acceptance, regenerate embeddings, FAISS, official
+   retrieval, and manual-evaluation inputs from the clean chunks. Do not reuse
+   row-aligned downstream artifacts from the contaminated run.
+
+EXPECTED COUNTS
+
+- Expected documents: 1760 (1761 accepted documents minus the one confirmed
+  auxiliary workbook), provided the raw corpus has not otherwise changed.
+- Expected chunks: 335371 (335393 minus the workbook's 22 chunks), provided
+  inputs and chunking semantics are unchanged. Treat this as an acceptance
+  expectation, not as permission to force the count; investigate any other
+  delta.
+
+REQUIRED CONTAMINATION CHECKS BEFORE EMBEDDINGS
+
+- Confirm zero documents and zero chunks have source
+  F3_Dinamicas_Territoriales/FASE ORDENADA CODEFEST.xlsx.
+- Compare q001-q050 against clean documents/chunks using normalized full-query
+  containment and substantial-prefix checks without printing query text.
+- Check combinations of PREGUNTA, FRAGMENTO, RESPUESTA, QUERY, and CONSULTA.
+- Require zero confirmed and zero suspicious sources, or stop for human review.
+- Persist counts, hashes, excluded-file accounting, and the contamination
+  verdict for the new run.
+
+EXACT STOP POINT
+
+STOP after clean documentos.jsonl and chunks.jsonl pass contract, count, hash,
+and contamination validation. Do not start embeddings, FAISS, retrieval,
+manual grading, optimization, or any agent-driven next phase until a human
+reviews and explicitly accepts the clean ingestion/chunking evidence.

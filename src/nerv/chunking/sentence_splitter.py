@@ -36,6 +36,65 @@ _PYSBD_LANGUAGE_CODES = {
     "pt": "es",
 }
 
+_TERMINAL_SENTENCE_END = re.compile(r"[.!?…][\"'”’»\)\]\}]*$")
+_PDF_PAGE_MARKER = re.compile(r"\[Pagina\s+\d+\]")
+_JSON_FIELD_START = re.compile(
+    r"^(?:title|date|authors?\[\d+\]|abstract|keywords?\[\d+\]|doi|issue|"
+    r"body_paragraphs\[\d+\]|lists\[\d+\]|alerta_meta\.[^: ]+):",
+    re.IGNORECASE,
+)
+_NUMBERED_CONTINUATION = re.compile(
+    r"^[\"'“‘«]*(?:\(?[a-zivx]+\)|\(\d+\))\s*",
+    re.IGNORECASE,
+)
+_NUMBERED_HEADING_TAIL = re.compile(
+    r"(?:^|[.!?…]\s+)\d+(?:\.\d+)*\.\s+[^.!?…]{1,100}$"
+)
+_FOOTNOTE_START = re.compile(r"^\d{1,3}\s+\S")
+_PDF_SOURCE_LINE = re.compile(r"^(?:Fuente|Source):", re.IGNORECASE)
+_PDF_TABLE_CODE = re.compile(r"\([A-Z]{2,4}\)")
+_PDF_NUMERIC_CELL = re.compile(r"^[-+]?\d[\d.,%]*$")
+_LEGAL_RECITAL_START = re.compile(
+    r"^(?:Tomando\s+nota|Recordando|Reconociendo|Considerando|Rappelant|"
+    r"Considérant|Reconnaissant|Recalling|Recognizing|Considering)\b",
+    re.IGNORECASE,
+)
+_CONTINUATION_CONNECTORS = frozenset(
+    {
+        "a",
+        "al",
+        "and",
+        "as",
+        "con",
+        "da",
+        "das",
+        "de",
+        "del",
+        "do",
+        "dos",
+        "e",
+        "el",
+        "en",
+        "for",
+        "in",
+        "la",
+        "las",
+        "los",
+        "o",
+        "of",
+        "on",
+        "or",
+        "para",
+        "por",
+        "que",
+        "the",
+        "to",
+        "um",
+        "uma",
+        "y",
+    }
+)
+
 
 @dataclass(frozen=True)
 class _BoundedSegmentationStats:
@@ -200,6 +259,166 @@ def _clean_segments(segments: Sequence[str]) -> list[str]:
     return [segment.strip() for segment in segments if segment.strip()]
 
 
+def _prepare_document_text(text: str, *, document_format: str) -> str:
+    """Normalize PDF newlines without discarding extraction provenance.
+
+    The accepted ingestion artifact retains line breaks and synthetic page
+    labels. They remain available to the deterministic reconciliation pass so
+    it can distinguish line wraps, paragraphs, and page labels.
+    """
+    if not isinstance(document_format, str):
+        raise TypeError("document_format must be a string.")
+    if document_format.casefold() != "pdf":
+        return text
+
+    return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
+def _first_alpha(text: str) -> str:
+    """Return the first alphabetic character, or an empty string."""
+    return next((character for character in text if character.isalpha()), "")
+
+
+def _last_word(text: str) -> str:
+    """Return a normalized final word for continuation checks."""
+    words = text.split()
+    if not words:
+        return ""
+    return words[-1].casefold().strip(".,;:!?…()[]{}\"'”’»-")
+
+
+def _looks_like_prose_line(text: str) -> bool:
+    """Reject short or all-caps structural lines from PDF wrap merging."""
+    words = text.split()
+    if len(words) < 5:
+        return False
+    alpha_words = [word for word in words if any(char.isalpha() for char in word)]
+    if len(alpha_words) / len(words) < 0.60:
+        return False
+    upper_words = sum(word.strip(".,:;()[]").isupper() for word in alpha_words)
+    return upper_words / len(alpha_words) < 0.70
+
+
+def _looks_like_spaced_pdf_heading(text: str) -> bool:
+    """Recognize extraction-split headings rendered as spaced capitals."""
+    words = text.split()[:16]
+    return sum(len(word) == 1 and word.isupper() for word in words) >= 4
+
+
+def _looks_like_pdf_table_continuation(left: str, right: str) -> bool:
+    """Recognize a country-code table followed by its numeric value cells."""
+    if len(_PDF_TABLE_CODE.findall(left)) < 4:
+        return False
+    return sum(
+        _PDF_NUMERIC_CELL.match(word) is not None for word in right.split()
+    ) >= 4
+
+
+def _should_reconcile_boundary(
+    left: str,
+    right: str,
+    *,
+    separator: str,
+    document_format: str,
+) -> bool:
+    """Recognize only deterministic impossible-continuation boundaries."""
+    if not left or not right or _TERMINAL_SENTENCE_END.search(left.rstrip()):
+        return False
+    if _JSON_FIELD_START.match(right.lstrip()):
+        return False
+
+    first_alpha = _first_alpha(right)
+    continuous_whitespace = "\n" not in separator and "\r" not in separator
+    lexical_continuation = (
+        first_alpha.islower()
+        or _last_word(left) in _CONTINUATION_CONNECTORS
+        or left.rstrip().endswith((",", ";", ":", "-", "–"))
+        or _NUMBERED_CONTINUATION.match(right.lstrip()) is not None
+    )
+    if continuous_whitespace:
+        return lexical_continuation
+
+    if document_format.casefold() != "pdf":
+        return False
+    if _PDF_PAGE_MARKER.match(right.lstrip()):
+        return True
+    line_break_count = separator.count("\n") + separator.count("\r")
+    if line_break_count == 1 and lexical_continuation:
+        return True
+    if line_break_count >= 2 and _LEGAL_RECITAL_START.match(right.lstrip()):
+        return True
+    if line_break_count == 1 and (
+        _PDF_SOURCE_LINE.match(right.lstrip())
+        or _looks_like_spaced_pdf_heading(right)
+        or _looks_like_pdf_table_continuation(left, right)
+    ):
+        return True
+    if (
+        line_break_count == 1
+        and _looks_like_prose_line(left)
+        and _looks_like_prose_line(right)
+    ):
+        return True
+    if (
+        line_break_count >= 1
+        and len(left.split()) <= 12
+        and _looks_like_prose_line(right)
+    ):
+        # A short non-terminal PDF heading/label is a structural prefix for
+        # following prose. Two adjacent short structural cells are not a
+        # heading/body pair and must remain independently packable.
+        return True
+    if _NUMBERED_HEADING_TAIL.search(left.rstrip()):
+        return True
+    return _FOOTNOTE_START.match(right.lstrip()) is not None and len(left.split()) >= 8
+
+
+def _segment_offsets(text: str, sentences: Sequence[str]) -> list[tuple[int, int]]:
+    """Locate clean PySBD items in their unchanged source order."""
+    offsets: list[tuple[int, int]] = []
+    cursor = 0
+    for sentence in sentences:
+        start = text.find(sentence, cursor)
+        if start < 0:
+            raise ValueError(
+                "sentence reconciliation could not preserve source ordering; "
+                "the PySBD output was not found in the prepared document text."
+            )
+        end = start + len(sentence)
+        offsets.append((start, end))
+        cursor = end
+    return offsets
+
+
+def _reconcile_invalid_boundaries(
+    text: str,
+    sentences: Sequence[str],
+    *,
+    document_format: str,
+) -> list[str]:
+    """Merge proven invalid PySBD boundaries without inventing content."""
+    if len(sentences) < 2:
+        return list(sentences)
+
+    offsets = _segment_offsets(text, sentences)
+    reconciled = [sentences[0]]
+    previous_end = offsets[0][1]
+    for index, sentence in enumerate(sentences[1:], start=1):
+        start, end = offsets[index]
+        separator = text[previous_end:start]
+        if _should_reconcile_boundary(
+            reconciled[-1],
+            sentence,
+            separator=separator,
+            document_format=document_format,
+        ):
+            reconciled[-1] = " ".join((reconciled[-1].rstrip(), sentence.lstrip()))
+        else:
+            reconciled.append(sentence)
+        previous_end = end
+    return reconciled
+
+
 def _normalized_digest(text: str) -> str:
     """Hash normalized text for content-safe diagnostic correlation."""
     normalized = " ".join(text.split())
@@ -223,6 +442,7 @@ def _split_sentences_bounded_with_stats(
     text: str,
     *,
     language: str,
+    document_format: str | None = None,
     target_block_characters: int = DEFAULT_TARGET_BLOCK_CHARACTERS,
     maximum_block_characters: int = DEFAULT_MAXIMUM_BLOCK_CHARACTERS,
     trace: bool = False,
@@ -240,7 +460,12 @@ def _split_sentences_bounded_with_stats(
     )
     if not isinstance(trace, bool):
         raise TypeError("trace must be a boolean.")
-    normalized_text = text.strip()
+    prepared_text = (
+        _prepare_document_text(text, document_format=document_format)
+        if document_format is not None
+        else text
+    )
+    normalized_text = prepared_text.strip()
     started = time.perf_counter()
     if not normalized_text:
         return _BoundedSegmentationResult(
@@ -377,8 +602,17 @@ def _split_sentences_bounded_with_stats(
         stats.oversized_carry_warning_count,
         stats.duration_seconds,
     )
+    reconciled_sentences = (
+        _reconcile_invalid_boundaries(
+            normalized_text,
+            sentences,
+            document_format=document_format,
+        )
+        if document_format is not None
+        else sentences
+    )
     return _BoundedSegmentationResult(
-        sentences=sentences,
+        sentences=reconciled_sentences,
         stats=stats,
         traces=tuple(traces),
     )

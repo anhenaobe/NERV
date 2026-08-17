@@ -1,0 +1,176 @@
+CLEAN UPSTREAM MISSING DOCUMENTS DIAGNOSIS
+
+1. VERDICT
+
+CLEAN_RERUN_READY.
+
+The 84 unexpected removals are an ingestion regression, not a raw-corpus
+change and not a chunking failure. The current reader rejected an otherwise
+useful PDF whenever any individual page returned empty OCR text. Empty OCR
+text is valid for blank and non-text pages and must not invalidate useful text
+from the rest of the document.
+
+2. UNEXPECTED MISSING DOCUMENT COUNT
+
+Unexpected missing documents: 84.
+
+The accepted run has 1761 documents. The clean run has 1676 documents. The
+85-source delta consists of the intentional evaluation workbook plus exactly
+84 unexpected PDFs. The exhaustive source join used the source fields from
+both documentos.jsonl artifacts and excludes only:
+
+F3_Dinamicas_Territoriales/FASE ORDENADA CODEFEST.xlsx
+
+3. RAW FILE EXISTENCE
+
+Raw file exists: 84.
+Raw file missing: 0.
+
+All 84 current files also match the accepted ingestion-cache signature:
+
+- size match: 84/84
+- mtime_ns match: 84/84
+- size plus mtime_ns match: 84/84
+
+The raw corpus did not change for this source set.
+
+4. INGESTION STATUS BREAKDOWN
+
+The exhaustive join of the 84 paths against the clean errores.jsonl gives:
+
+- failed: 84
+- pending_ocr: 0
+- sin_texto_util: 0
+- empty / vacío: 0
+- omitted: 0
+- parser exception: 0
+- explicit persisted OCR exception: 0
+- missing raw file: 0
+- other: 0
+- unknown: 0
+
+All 84 final records have estado=fallido and the same error type:
+
+PDF con paginas sin texto recuperable por OCR: <page numbers>
+
+The individual page-number lists vary. The two most repeated exact messages
+are page 2 alone (8 documents) and pages 30, 31 (6 documents). The external
+ingestion stdout was not persisted in the clean run, so any lower-level page
+exception text that the old helper swallowed is unavailable. No Tesseract,
+tessdata, language-pack, or parser exception appears in the persisted clean
+run artifacts.
+
+5. PDF/OCR CLASSIFICATION
+
+- PDFs: 84/84
+- Previously produced a document: 84/84
+- Previous accepted error record: 0/84
+- Previous accepted cache record: 84/84
+- Previous accepted cache signature usar_ocr=true: 84/84
+- Previous character count: minimum 11,433; median 143,911;
+  maximum 1,846,600; total 19,487,576
+
+Thus all 84 were previously accepted through the OCR second-pass cache path.
+Historical per-page native/mixed/OCR diagnostics were not serialized, so a
+complete page-mode subdivision cannot be reconstructed without rescanning.
+The bounded reproduction found all three sampled failures to be mixed PDFs:
+10/11, 32/34, and 17/18 pages had native text; the remaining pages were blank
+or non-text and returned empty OCR output without an exception.
+
+6. CLEAN VS ACCEPTED ENVIRONMENT DIFFERENCE
+
+Accepted production path:
+
+- Python executable: .venv-cuda/Scripts/python.exe
+- recorded Python: 3.12.10
+- Tesseract: C:\Program Files\Tesseract-OCR\tesseract.exe
+- OCR preflight: passed
+- required languages: spa, eng, por, chi_sim
+- available languages: all four required languages present
+- first pass: usar_ocr=false
+- second pass: enabled for 156 pending files
+- pending_ocr_after: 0
+- OCR DPI: 220
+- cache: written, with reads ignored in fresh mode
+
+Clean-upstream path:
+
+- Python executable: Get-Command python from inherited PATH
+- recorded Python: 3.14.5
+- Tesseract discovery: the same canonical Windows executable in lector_corpus
+- TESSDATA_PREFIX: inherited and not recorded by run_clean_upstream.ps1
+- repository-local tessdata directory: absent
+- current system tessdata: spa, eng, por, chi_sim all present
+- first pass: usar_ocr=false (no --ocr argument)
+- automatic second pass: enabled (no --sin-ocr argument)
+- OCR DPI: 220
+- cache: disabled by --sin-cache
+
+The Python selection and cache policy differ, and the clean script does not
+persist ingestion stdout or an OCR preflight manifest. Those differences did
+not produce the observed removals: the bounded test used Python 3.12.13 with
+the accepted environment's existing packages and canonical Tesseract, and it
+reproduced empty OCR output on the exact failed pages while preserving useful
+text after the code fix.
+
+7. ROOT CAUSE
+
+C. INGESTION CODE REGRESSION
+
+Commit 25ff615 introduced paginas_ocr_fallidas in leer_pdf and raised a
+document-level ValueError whenever any page returned empty OCR text. The
+accepted behavior retained a PDF if other pages supplied useful text. The
+clean run's 84 errors are exactly emitted by that new fatal branch. This made
+an expected blank/non-text page fatal to the entire mixed or OCR-driven PDF.
+
+8. BOUNDED REPRODUCTION
+
+Only three previously missing PDFs were read with OCR:
+
+1. CEOBS_2026032506514742771268534.pdf
+   - 11 pages; 10 native; 1 empty after OCR; 15,343 output characters
+2. SIPRI_laws-v-0.pdf
+   - 34 pages; 32 native; 2 empty after OCR; 85,635 output characters
+3. SWF_2025-es-counterspace-eng.pdf
+   - 18 pages; 17 native; 1 empty after OCR; 35,546 output characters
+
+All three now produce useful documents. Tesseract returned empty text, not an
+exception, on the same pages named by the clean-run failure records.
+
+9. FIX
+
+Implemented the minimum ingestion fix in
+src/nerv/ingestion/lector_corpus.py:
+
+- an empty OCR result for one page is recorded as paginas_sin_texto but does
+  not invalidate useful text from other pages;
+- a PDF still fails if the entire document has no useful text;
+- a real ValueError from page rendering or OCR is now propagated clearly
+  instead of being converted silently into an empty result.
+
+No chunking code, OCR routing, language configuration, exclusion rule, or
+production artifact was changed.
+
+10. FOCUSED VALIDATION
+
+- Direct unittest discovery: 36 ingestion tests passed.
+- Pytest: unavailable in the repository environment (No module named pytest).
+- Ruff: all checks passed on only the changed Python source and test files.
+- Three previously missing real PDFs: 3/3 produced non-empty documents.
+- Normal native PDF SIPRI_22136.pdf: 3/3 native pages, zero OCR pages,
+  non-empty document.
+- Extracto_Preguntas_50_v2.pdf: omitted.
+- FASE ORDENADA CODEFEST.xlsx: omitted.
+- Full ingestion and chunking were not run.
+
+11. CLEAN RERUN DECISION
+
+CLEAN_RERUN_READY.
+
+The cause is proven, the fix is bounded-tested against the observed failure
+mode, both exclusions remain effective, and a normal native PDF is unchanged.
+The next full clean-upstream execution remains a human-run acceptance step.
+
+12. EXACT NEXT HUMAN COMMAND
+
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_clean_upstream.ps1

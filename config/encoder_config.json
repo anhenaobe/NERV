@@ -13,5 +13,5 @@
   "normalization_method": "l2",
   "future_similarity_metric": "inner_product",
   "future_faiss_index": "IndexFlatIP",
-  "oversized_sentence_policy": "preserve_through_encoder_limit_then_hierarchical_subdivide"
+  "oversized_sentence_policy": "structural_records_may_subdivide_but_prose_above_limit_fails_closed"
 }

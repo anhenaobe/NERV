@@ -1,0 +1,131 @@
+TARGETED CODEFEST CORPUS CONTAMINATION AUDIT
+Audit date: 2026-08-15
+Scope: accepted documentos/chunks and existing official retrieval only; no OCR,
+ingestion, chunking, embedding, FAISS, or retrieval execution was performed.
+
+1. VERDICT
+
+CONTAMINATION_CONFIRMED
+
+One auxiliary question/evidence workbook was published as a production document.
+No other accepted source met the exact-query, substantial-prefix, or combined
+evaluation-marker criteria used by this targeted audit.
+
+2. FASE ORDENADA CODEFEST.XLSX CLASSIFICATION
+
+Classification: B. AUXILIARY/EVALUATION ARTIFACT — MUST BE EXCLUDED
+
+Repository-relative path:
+corpus/raw/F3_Dinamicas_Territoriales/FASE ORDENADA CODEFEST.xlsx
+
+Structure:
+- Sheet F1: worksheet max row 8; 6 populated rows; 4 columns. Headers are an
+  unnamed numeric key, PREGUNTA, FRAGMENTO, and DOCUMENTO.
+- Sheet F3: worksheet max row 21; 12 populated rows; 4 columns. Headers are
+  # 1, PREGUNTA, FRAGMENTO, and DOCUMENTO.
+- No formulas were present.
+
+The workbook contains questions paired with candidate/expected evidence
+fragments and source-document identifiers; some rows also carry query-like and
+chunk-like identifiers. It has no explicit RESPUESTA or label column, but its
+question-fragment-document mapping is evaluation metadata, not a legitimate
+standalone source corpus.
+
+3. OFFICIAL QUERY MATCHES
+
+Seven of the 50 official queries occur literally in workbook cells:
+q002, q003, q004, q033, q034, q035, q036.
+
+Match type: exact text for all seven. Unicode/case/whitespace normalization
+found no additional workbook matches. The comparison did not expose query text.
+
+4. OTHER CONTAMINATED SOURCES
+
+None found.
+
+Confirmed contaminated source:
+- Source: F3_Dinamicas_Territoriales/FASE ORDENADA CODEFEST.xlsx
+- Repository-relative path:
+  corpus/raw/F3_Dinamicas_Territoriales/FASE ORDENADA CODEFEST.xlsx
+- Document ID: DOC-b4c484554b8e
+- Matched queries: q002, q003, q004, q033, q034, q035, q036
+- Chunks containing matched official wording: 7
+- Total chunks from the contaminated document: 22
+- Reason: exact official-query wording plus explicit PREGUNTA-FRAGMENTO-
+  DOCUMENTO mappings. Eight chunks contain combined structural markers.
+
+5. SUSPICIOUS SOURCES
+
+None. No other accepted source had a substantial query-prefix-only match or a
+combination of the targeted PREGUNTA, FRAGMENTO, RESPUESTA, QUERY, or CONSULTA
+markers.
+
+6. CONTAMINATED DOCUMENT COUNT
+
+1 of 1761 accepted documents.
+
+7. CONTAMINATED CHUNK COUNT
+
+22 of 335393 accepted chunks. The entire document is an auxiliary evaluation
+artifact, so all of its chunks are contaminated even though only 7 contain a
+complete official query.
+
+8. RETRIEVAL IMPACT
+
+Existing official results retrieve at least one contaminated chunk for:
+- Top 1: 9 of 50 queries
+  (q002, q004, q033, q034, q035, q036, q040, q041, q042)
+- Top 3: 10 of 50 queries
+  (adds q015)
+- Top 5: 11 of 50 queries
+  (adds q008)
+- Top 10: 12 of 50 queries
+  (adds q012)
+
+The current retrieval-quality measurement is therefore biased and must not be
+graded or reported as clean.
+
+9. CURRENT EXCLUSION LOGIC
+
+src/nerv/ingestion/lector_corpus.py defines ARCHIVOS_AUXILIARES with explicit
+filenames including Extracto_Preguntas_50_v2.pdf. That main exclusion applies
+only when the candidate is directly under the corpus root. It is a
+filename-specific list, not a general auxiliary-artifact policy.
+
+FASE ORDENADA CODEFEST.xlsx was admitted because it is nested under
+F3_Dinamicas_Territoriales and is not in ARCHIVOS_AUXILIARES.
+
+The current checkout also names this source in
+src/nerv/evaluation/contamination.py, but the only caller found is
+scripts/preparar_para_colab.py. The accepted production pipeline does not call
+that filter before publishing documents/chunks, so it did not protect these
+accepted artifacts.
+
+10. MINIMUM REQUIRED FIX
+
+Exclude exactly this confirmed repository-relative path before document
+publication:
+
+F3_Dinamicas_Territoriales/FASE ORDENADA CODEFEST.xlsx
+
+Implement the check against the normalized repository-relative path regardless
+of nesting, and add one focused ingestion regression test proving that the file
+is recorded as omitted and produces no document. Do not introduce a broad
+PREGUNTA/FRAGMENTO heuristic at ingestion, change legitimate XLSX parsing, or
+change chunking/retrieval semantics. Retain the chunk-level detector only as
+defense in depth.
+
+11. ARTIFACTS THAT MUST BE REGENERATED
+
+After human approval and implementation of the exclusion, regenerate the
+accepted production chain from ingestion onward:
+- documentos.jsonl and its ingestion accounting;
+- chunks.jsonl and chunk validation/metrics;
+- embeddings.npy and embedding manifest;
+- FAISS index and index manifest;
+- official q001-q050 retrieval results, metrics, manifest, log, and report;
+- retrieval_manual_eval.csv before any human grading begins.
+
+The current production documents, chunks, embeddings, index, official results,
+and manual-evaluation CSV must remain as historical contaminated evidence and
+must not be relabeled as clean.

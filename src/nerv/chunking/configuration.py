@@ -95,7 +95,7 @@ def load_encoder_config(
         "future_similarity_metric": "inner_product",
         "future_faiss_index": "IndexFlatIP",
         "oversized_sentence_policy": (
-            "preserve_through_encoder_limit_then_hierarchical_subdivide"
+            "structural_records_may_subdivide_but_prose_above_limit_fails_closed"
         ),
     }
     for field, approved in approved_values.items():

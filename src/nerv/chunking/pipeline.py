@@ -4,6 +4,7 @@ import argparse
 import json
 import logging
 import os
+import re
 import shutil
 import time
 from collections.abc import Callable, Iterator, Sequence
@@ -38,6 +39,64 @@ DEFAULT_LOG_PATH = Path("outputs/logs/chunking_pipeline.log")
 _HANDLER_PREFIX = "nerv.chunking.pipeline."
 _REQUIRED_FIELDS = frozenset({"doc_id", "fuente", "formato", "fenomeno", "texto"})
 _TABULAR_FORMATS = frozenset({"csv", "tsv", "xls", "xlsx"})
+_STRICT_PROSE_FORMATS = frozenset({"pdf", "txt"})
+_SQL_STRUCTURE = re.compile(
+    r"\b(?:SELECT|FROM|JOIN|WHERE|GROUP\s+BY|ORDER\s+BY|UNION|ON)\b",
+    re.IGNORECASE,
+)
+_ENUMERATED_STRUCTURE = re.compile(
+    r"(?:^|\s)(?:\(?[a-zivx]+\)|\(\d+\))(?=\s|[,;:])",
+    re.IGNORECASE,
+)
+_BULLET_STRUCTURE = re.compile(r"(?:^|\s)[•▪◦●]\s*")
+_BOOLEAN_QUERY_STRUCTURE = re.compile(
+    r"\b(?:AND|OR|NOT)\b|\[[^\]]{1,80}\]",
+    re.IGNORECASE,
+)
+_URL_STRUCTURE = re.compile(r"(?:https?://|www\.)", re.IGNORECASE)
+_PAGE_MARKER_STRUCTURE = re.compile(r"\[Pagina\s+\d+\]", re.IGNORECASE)
+_ENCODED_BLOB_STRUCTURE = re.compile(r"[A-Za-z0-9_%!+=/-]{40,}")
+
+
+class GenuineOversizedSentenceError(ValueError):
+    """A complete prose unit cannot be stored within the frozen encoder limit."""
+
+
+def _looks_structural_oversized_unit(text: str) -> bool:
+    """Recognize deterministic code/table/list spans before hard subdivision."""
+    if len(_SQL_STRUCTURE.findall(text)) >= 4:
+        return True
+    if len(_ENUMERATED_STRUCTURE.findall(text)) >= 8:
+        return True
+    bullet_count = len(_BULLET_STRUCTURE.findall(text))
+    if bullet_count >= 4:
+        return True
+    if (
+        bullet_count >= 1
+        and _PAGE_MARKER_STRUCTURE.search(text) is not None
+        and len(text.split()) >= 100
+    ):
+        return True
+    if len(_BOOLEAN_QUERY_STRUCTURE.findall(text)) >= 12:
+        return True
+    if len(_URL_STRUCTURE.findall(text)) >= 4:
+        return True
+    encoded_fragments = _ENCODED_BLOB_STRUCTURE.findall(text)
+    encoded_material = "".join(encoded_fragments)
+    if (
+        len(encoded_material) >= 400
+        and any(character.isdigit() for character in encoded_material)
+        and any(character in "_%!+=/-" for character in encoded_material)
+    ):
+        return True
+    words = text.split()
+    if len(words) >= 100 and (text.count(",") >= 20 or text.count(";") >= 8):
+        return True
+    alpha_words = [word for word in words if any(char.isalpha() for char in word)]
+    if len(alpha_words) < 40:
+        return False
+    uppercase = sum(word.strip(".,:;()[]").isupper() for word in alpha_words)
+    return uppercase / len(alpha_words) >= 0.70
 
 
 def _safe_log_text(value: str) -> str:
@@ -497,6 +556,7 @@ def _process_document(
         segmentation = _split_sentences_bounded_with_stats(
             text,
             language=detected_language,
+            document_format=document_format,
         )
         sentences = segmentation.sentences
         bounded_segmentation_stats = segmentation.stats
@@ -513,6 +573,23 @@ def _process_document(
             chunk_text,
             include_document_prefix=True,
         )
+
+    if document_format.casefold() in _STRICT_PROSE_FORMATS:
+        prose_unit_counts = token_counter.count_many(
+            sentences,
+            include_document_prefix=True,
+        )
+        for unit_index, unit_token_count in enumerate(prose_unit_counts):
+            if (
+                unit_token_count > encoder_max_input_tokens
+                and not _looks_structural_oversized_unit(sentences[unit_index])
+            ):
+                raise GenuineOversizedSentenceError(
+                    "GENUINE_OVERSIZED_SENTENCE_BLOCKER: reconstructed prose "
+                    f"unit {unit_index} for document {document['doc_id']} has "
+                    f"{unit_token_count} tokens; frozen limit is "
+                    f"{encoder_max_input_tokens}."
+                )
 
     chunking_started = time.perf_counter()
     batched = _create_additive_chunks(
@@ -721,7 +798,7 @@ def write_chunking_config(
         "effective_content_max_tokens": encoder_max_input_tokens,
         "overlap_tokens": overlap_tokens,
         "oversized_sentence_policy": (
-            "preserve_through_encoder_limit_then_hierarchical_subdivide"
+            "structural_records_may_subdivide_but_prose_above_limit_fails_closed"
         ),
         "language_detector": "nerv.chunking.language_detector.detect_language",
         "splitter_backend_by_language": dict(_PYSBD_LANGUAGE_CODES),

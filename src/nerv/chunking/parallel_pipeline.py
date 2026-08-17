@@ -518,7 +518,7 @@ def _write_parallel_chunking_config(
         "effective_content_max_tokens": metadata.effective_content_max_tokens,
         "overlap_tokens": config["overlap_tokens"],
         "oversized_sentence_policy": (
-            "preserve_through_encoder_limit_then_hierarchical_subdivide"
+            "structural_records_may_subdivide_but_prose_above_limit_fails_closed"
         ),
         "language_detector": "nerv.chunking.language_detector.detect_language",
         "splitter_backend_by_language": dict(_PYSBD_LANGUAGE_CODES),

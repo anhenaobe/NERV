@@ -1,0 +1,143 @@
+OVERSIZED RECONCILIATION PREFLIGHT REPORT
+==========================================
+
+1. DOC-786 FAILURE
+------------------
+Document: DOC-786054eb221c
+Source: F1_IA_y_Capacidades_Estrategicas/AI_Index_Stanford/pdfs/
+AIINDEX_ai-index-report-2019.pdf
+Format: PDF
+Failed reconstructed unit: 2096
+Observed exact count: 624 tokens including the frozen passage prefix.
+
+The source span is Table A4.6. It contains 191 newline-delimited table cells
+and labels: AI skill names, cluster headings, repeated cluster codes, and one
+following explanatory sentence. It has no linguistic basis for treatment as
+one indivisible sentence. Preceding units contain the table caption and page
+metadata; following units contain the table note and the next page heading.
+
+Classification: STRUCTURAL_MULTI_UNIT.
+
+2. NEW FAILURE PATTERN
+----------------------
+The general failure was runaway PDF single-newline reconciliation. Once a
+short structural cell seeded a merged unit, the accumulated left side became
+prose-like. The former rule then appended every following short table/list
+cell because it tested only the accumulated left side. A related lexical rule
+could also cross blank-line paragraph boundaries before examining newline
+structure.
+
+3. GENERAL FIX
+--------------
+PDF single-newline prose reconciliation now requires both sides to be
+prose-like unless a narrower existing continuation signal applies. A short
+heading/label now attaches only to following prose. Lexical continuation may
+cross continuous whitespace or one extraction newline, but not an arbitrary
+blank-line paragraph boundary. Dedicated deterministic handling remains for
+page labels, source captions, spaced-capital headings, country-code numeric
+tables, legal recital starts, numbered tails, and footnotes.
+
+No document ID or source-specific branch was added. The encoder, tokenizer
+semantics, chunk target, overlap, and frozen 510-token content limit are
+unchanged.
+
+4. PREFLIGHT DESIGN
+-------------------
+scripts/preflight_corrected_sentence_units.py reads the accepted
+documentos.jsonl and stops after format-aware source preparation, language
+detection, bounded PySBD segmentation, corrected reconciliation, and token
+safety classification. It does not pack production chunks, create manifests,
+load an encoder, generate embeddings, load FAISS, or run retrieval.
+
+The cheap prefilter uses NFKC-normalized UTF-8 byte length plus a conservative
+SentencePiece margin. Only plausible candidates are exactly counted with the
+frozen intfloat/multilingual-e5-small tokenizer. Exact counts, not the cheap
+prefilter, determine acceptance.
+
+5. GLOBAL PREFLIGHT RESULTS
+---------------------------
+Input documents: 1760
+Reconstructed units examined: 1709477
+Exact tokenizer candidates: 42661
+Units over 510: 497
+Structural candidates over 510: 497
+Prose candidates over 510: 0
+Ambiguous candidates: 0
+Maximum exact candidate count: 10239
+
+Output:
+outputs/validation/corrected_sentence_unit_preflight.json
+
+6. >510 CANDIDATE CLUSTERS
+--------------------------
+Final compact classifications:
+- CSV structural records: 435
+- JSON structural records: 17
+- Recognized PDF/TXT structural spans: 45
+
+The candidate-only diagnostic pass clustered the previously ambiguous PDF
+population into dense extracted tables, multiline structural blocks,
+comma-separated entity/skill lists, ticker tables, cross-page structures,
+citation lists, numbered lists, Boolean search expressions, encoded URL/session
+artifacts, page-bounded bullet lists, and legal recital/list structures.
+
+7. GENUINE OVERSIZED SENTENCES
+------------------------------
+Count: 0
+
+The genuine unclassified prose path remains fail-closed and is covered by a
+focused regression test. Structural recognition requires deterministic list,
+table, query, URL/blob, bullet, numeric, or uppercase-code evidence.
+
+8. AMBIGUOUS CASES
+------------------
+Count: 0
+
+All >510 candidates were resolved by general format/text patterns. No
+document-specific exception was used.
+
+9. PREVIOUS REGRESSION SET
+--------------------------
+Known 184 PDF boundaries: PASS (184/184, 0 failures)
+Known 81 continuous-whitespace boundaries: PASS (81/81, 0 failures)
+DOC-786054eb221c over-limit candidate: PASS (0 remaining)
+Already-correct PDF controls: PASS (5/5, 0 regressions)
+CSV/JSON structural regression: PASS
+Overlap contract: PASS
+Maximum stored tokens in bounded regression: 510
+
+Combined focused pytest: 85 passed, 2 optional real-tokenizer tests skipped
+because NERV_TEST_ENCODER_MODEL was not configured.
+
+10. TOKENIZER WARNING
+---------------------
+Status: TOKENIZER_COUNT_ONLY
+
+The reproduced >512 warning occurred in TokenCounter while token IDs were
+being counted with truncation disabled. No encoder/model object or inference
+call received the sequence. The optimized count call now passes verbose=False
+to suppress the misleading Transformers model-limit warning without changing
+tokenization or truncation semantics. Exact count equality remains covered by
+the existing TokenCounter tests and the real preflight.
+
+11. FULL-RUN AUTHORIZATION
+--------------------------
+Known 184: PASS
+Known 81: PASS
+DOC-786054eb221c: PASS
+Global preflight prose candidates over 510: 0
+Genuine oversized sentences: 0
+Ambiguous oversized prose: 0
+Structural regression: PASS
+Token safety: PASS
+
+FULL_CHUNK_RETRY_AUTHORIZED
+
+The production command was not executed. The authorized next action belongs
+to the human:
+
+.\scripts\run_corrected_chunking.ps1
+
+12. FINAL VERDICT
+-----------------
+READY_TO_RETRY_FULL_CHUNKING

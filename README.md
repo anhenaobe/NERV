@@ -1,66 +1,61 @@
 # NERV
 
-Sistema de recuperación semántica para el reto CODEFEST AD ASTRA 2026. NERV
-transforma un corpus heterogéneo en documentos trazables, chunks compatibles con
-un encoder multilingüe, vectores normalizados y resultados de recuperación
-auditables.
+NERV is a deterministic multilingual vector-retrieval system built for
+CODEFEST AD ASTRA 2026 Stage 1. It turns a heterogeneous evidence corpus into
+traceable documents and encoder-safe chunks, indexes their normalized vectors,
+and returns ranked documents and source fragments for the 50 official queries.
 
-## Problema
+Stage 1 contains no agent, large language model, or generative API in its data,
+ranking, or serialization path. Experimental agents under `src/nerv/agents/`
+are separate Stage-2 work and are not imported by the Stage-1 generator.
 
-El corpus combina PDF, JSON, CSV, hojas de cálculo, HTML, texto, imágenes y PBF.
-El sistema debe extraer contenido útil sin perder trazabilidad, dividirlo sin
-truncación silenciosa y recuperar evidencia relevante para cada consulta.
-
-## Arquitectura
+## Retrieval architecture
 
 ```text
-Corpus
-  -> Ingesta
-  -> documentos.jsonl
-  -> Chunking
-  -> chunks.jsonl
-  -> Embeddings
-  -> FAISS
-  -> Codificación de consulta
-  -> Recuperación y ranking
-  -> resultados.jsonl
+corpus -> deterministic extraction -> documentos.jsonl
+       -> language-aware chunking   -> chunks.jsonl
+       -> passage embeddings        -> normalized float32 vectors
+       -> FAISS IndexFlatIP         -> numeric retrieval
+       -> max-score document pool   -> resultados.jsonl
 ```
 
-Los límites de cada etapa están documentados en
-[Arquitectura](docs/architecture/architecture.md) y
-[Contrato del pipeline](docs/architecture/pipeline.md).
+- Supported source formats: PDF, JSON, CSV, XLSX, HTML, TXT, common image
+  formats through optional OCR, and PBF through the configured adapter.
+- Chunking: ES/EN sentence segmentation, documented Portuguese fallback,
+  deterministic PDF-boundary reconciliation, 256-token soft target, 32-token
+  complete-unit overlap, and a 510-token encoder-safe stored maximum.
+- Structural CSV/JSON records and recognized extracted tables/lists may be
+  subdivided with explicit trace metadata. Unclassified prose over the safe
+  limit fails closed.
+- Encoder: `intfloat/multilingual-e5-small`, 384 dimensions, exact `passage: `
+  and `query: ` prefixes, and L2 normalization.
+- Vector search: FAISS `IndexFlatIP`; inner product over normalized vectors is
+  cosine-equivalent.
+- Document aggregation: deterministic numeric max pooling. A document receives
+  the highest similarity score among its candidate chunks.
 
-## Estructura del repositorio
+No official NDCG@10 or F1@3 value is claimed because hidden relevance labels
+are not available in the repository.
+
+## Repository structure
 
 ```text
-config/          Configuración semántica y ejemplo de ejecución
-corpus/          Entradas, caché, documentos procesados y consultas no versionadas
-docs/            Arquitectura, subsistemas, decisiones, evidencia y archivo
-entrega/         Estructura esperada de la entrega CODEFEST
-outputs/         Artefactos generados; solo .gitkeep se versiona
-scripts/         Herramientas manuales, diagnósticas y de evaluación
-src/nerv/        Único paquete Python autoritativo
-tests/           Pruebas y fixtures pequeños por subsistema
-generador.py     Flujo de generación actualmente utilizable
-pyproject.toml   Empaquetado y configuración de pytest, Ruff y mypy
+config/          Canonical encoder and execution configuration
+corpus/          Local corpus/query locations; production data is not versioned
+docs/            Architecture, decisions, and bounded validation evidence
+entrega/         Official CODEFEST delivery layout and deterministic generator
+outputs/         Generated run artifacts; production outputs are not versioned
+scripts/         Guarded operator, audit, evaluation, and diagnostic tools
+src/nerv/        Authoritative Python package
+tests/           Unit, focused integration, and delivery-contract tests
 ```
 
-## Subsistemas
+Core modules are kept in `src/nerv/`; the competition folder is packaging, not
+a second application architecture.
 
-- `nerv.ingestion`: lectores, OCR opcional, limpieza, `doc_id`, orden estable,
-  incidencias y JSONL. El contrato mínimo contiene `doc_id`, `fuente`,
-  `formato`, `fenomeno` y `texto`.
-- `nerv.chunking`: detección ES/EN/PT, segmentación acotada, conteo con el
-  tokenizer real, solapamiento y división jerárquica determinista.
-- `nerv.embeddings`: adaptación a SentenceTransformer, validación previa a
-  encode, manifiestos y alineación fila a fila.
-- `nerv.vector_database`: construcción y persistencia FAISS.
-- `nerv.retrieval`: consulta, búsqueda, agregación documental y ranking.
-- `nerv.evaluation`: validadores, métricas y controles de contaminación.
+## Environment and setup
 
-## Instalación
-
-Requiere Python 3.12 o superior. En PowerShell:
+NERV requires Python 3.12 or newer. From the repository root in PowerShell:
 
 ```powershell
 python -m venv .venv
@@ -70,97 +65,72 @@ python -m pip install -r requirements-dev.txt
 python -m pip install -e .
 ```
 
-No se deben instalar dependencias ni modelos dentro del repositorio.
+The public encoder must be available to SentenceTransformers. For a fully
+offline run, cache it beforehand and pass `--local-files-only`.
 
-## Configuración
+## CODEFEST delivery
 
-- `config/encoder_config.json`: contrato semántico canónico.
-- `config/config.example.yaml`: paths y parámetros de ejecución; cópielo como
-  `config/config.yaml` para configuración local.
+The mandatory submission package is:
 
-Contrato técnico validado:
-
-| Propiedad | Valor |
-|---|---|
-| Encoder | `intfloat/multilingual-e5-small` |
-| Dimensión | 384 |
-| Prefijo de pasaje | `passage: ` |
-| Prefijo de consulta | `query: ` |
-| Objetivo suave de chunk | 256 IDs |
-| Capacidad total del encoder | 512 IDs |
-| Tokens especiales medidos | 2 IDs |
-| Presupuesto almacenado efectivo | 510 IDs |
-| Normalización | L2 |
-| Índice FAISS | `IndexFlatIP` |
-
-## Comandos principales
-
-Ingesta, conservando el wrapper histórico:
-
-```powershell
-python src/lector_corpus.py --corpus corpus/raw --salida corpus/processed
-# Tras instalación editable también está disponible:
-nerv-ingest --corpus corpus/raw --salida corpus/processed
+```text
+entrega/
+├── resultados.jsonl
+├── generador.py
+├── informe_tecnico.pdf
+└── base_vectorial/
+    └── encoder_intfloat_multilingual-e5-small/
+        ├── index.faiss
+        └── metadata.jsonl
 ```
 
-Chunking independiente:
+Once a corrected chunk lineage has passed `CORRECTED_CHUNKS_PASS` and its
+downstream index/metadata have passed identity validation, reproduce the result
+file without rebuilding the index:
 
 ```powershell
-python -m nerv.chunking.pipeline corpus/processed/documentos.jsonl outputs/chunks.jsonl
-python -m nerv.chunking.real_corpus validate --input corpus/processed/documentos.jsonl --chunks outputs/chunks.jsonl --local-files-only
+python .\entrega\generador.py --local-files-only
 ```
 
-Consulte `python -m nerv.chunking.real_corpus --help` antes de una ejecución
-costosa. Los scripts de recuperación y entrega se describen en
-[Inventario de scripts](docs/architecture/scripts.md).
+The generator reads `corpus/queries/queries.jsonl`, requires the exact ordered
+IDs `q001` through `q050`, loads the delivered FAISS index and row-aligned
+metadata directly, encodes queries with the canonical prefix, performs numeric
+retrieval and max-pooling aggregation, and writes exactly 50 JSONL records.
 
-## Estado actual
+## Reproducibility and release state
 
-- `nerv.pipeline` y `scripts/run_e2e.ps1` orquestan ingesta, chunking,
-  embeddings, FAISS, recuperación y validación con manifiestos y métricas por
-  ejecución.
-- La aceptación fresh más reciente validó 1761 documentos y 335393 chunks, con
-  máximo almacenado 510, cero IDs duplicados y cero fallos de contrato.
-- La continuación de producción generó 335393 vectores `float32` normalizados
-  de 384 dimensiones en CUDA y un `IndexFlatIP` con `ntotal=335393`.
-- La recuperación se validó con 50 consultas sintéticas. El documento real de
-  consultas requiere una conversión fiel a JSONL antes de producir resultados
-  oficiales; los resultados sintéticos no son resultados de competencia.
-- Los artefactos completos de producción permanecen locales y excluidos de Git.
+Run manifests bind semantic configuration, artifact hashes, counts, stage
+parents, and ordered metadata identity. Production artifacts are generated in
+new run directories and are never silently overwritten or inferred from file
+timestamps.
 
-## Pruebas y calidad
+The accepted input for corrected Stage-1 chunking contains 1,760 documents
+(`sha256 96542c7af4245ba7eaf21b69dba7c1c84034b23931d3a938dd4a83cd8d8c2686`).
+The bounded preflight examined 1,709,477 reconstructed units and found zero
+unclassified prose candidates above 510 tokens. Final corrected chunk,
+embedding, FAISS, and result counts remain release-gated until the independent
+corrected-chunk audit and downstream validations pass.
+
+Operator workflow and evidence are in `docs/integration/`. Generated corpus,
+embeddings, indexes, results, logs, local environments, and model caches are
+excluded from normal Git history; the actual validated runtime artifacts must
+be copied into `entrega/` for the competition submission package.
+
+## Quality checks
 
 ```powershell
 python -m pytest -q
+python -m compileall -q src scripts entrega\generador.py
+ruff check src tests scripts entrega\generador.py
 mypy src generador.py
-ruff check src tests generador.py
-ruff check .
 ```
 
-El último comando puede mostrar deuda de estilo histórica que se reporta por
-separado; no se deben introducir hallazgos nuevos en archivos modificados.
+Use the bounded checks documented by each release report before production.
+Do not start full-corpus stages merely as a repository validation step.
 
-## Artefactos excluidos de Git
+## Documentation
 
-El corpus real, `documentos.jsonl`, `chunks*.jsonl`, matrices de embeddings,
-manifiestos grandes, índices FAISS, logs, cachés de modelos y directorios de
-trabajo temporales están excluidos. `corpus/` y `outputs/` conservan únicamente
-archivos `.gitkeep` para declarar la estructura.
-
-## Documentación
-
-- [Arquitectura](docs/architecture/architecture.md)
-- [Pipeline](docs/architecture/pipeline.md)
-- [Ingesta](docs/ingestion/ingesta.md)
-- [Chunking](docs/chunking/current_chunking_pipeline_flow.txt)
-- [Decisiones técnicas](docs/decisions/)
-- [Evidencia de integración](docs/integration/)
-- [Estructura de entrega](entrega/README.md)
-- [Contribución](CONTRIBUTING.md)
-
-## Equipo y contribuciones
-
-NERV es un proyecto colaborativo. Los cambios deben respetar los contratos
-compartidos, incluir evidencia proporcional al riesgo y evitar atribuir la
-arquitectura global a un único subsistema o contribuyente. Consulte
-[CONTRIBUTING.md](CONTRIBUTING.md) antes de proponer cambios.
+- [Architecture](docs/architecture/architecture.md)
+- [Pipeline contract](docs/architecture/pipeline.md)
+- [Stage-1 technical source](docs/integration/informe_tecnico_stage1_source.md)
+- [Delivery notes](entrega/README.md)
+- [Contribution guide](CONTRIBUTING.md)

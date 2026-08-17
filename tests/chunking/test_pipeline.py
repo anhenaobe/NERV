@@ -11,6 +11,7 @@ import pytest
 import nerv.chunking.pipeline as chunking_pipeline
 from nerv.chunking import TokenCounter, split_sentences
 from nerv.chunking.pipeline import (
+    GenuineOversizedSentenceError,
     PipelineSummary,
     parse_args,
     process_document,
@@ -135,7 +136,7 @@ def test_pipeline_preserves_contract_and_writes_configuration(
     assert configuration["chunk_max_tokens"] == 70
     assert configuration["overlap_tokens"] == 0
     assert configuration["oversized_sentence_policy"] == (
-        "preserve_through_encoder_limit_then_hierarchical_subdivide"
+        "structural_records_may_subdivide_but_prose_above_limit_fails_closed"
     )
     assert configuration["encoder_max_input_tokens"] == 512
 
@@ -176,7 +177,7 @@ def test_pipeline_subdivides_only_above_hard_limit_with_trace() -> None:
         {
             "doc_id": "split",
             "fuente": "fixture",
-            "formato": "txt",
+            "formato": "json",
             "fenomeno": 0,
             "texto": oversized_text,
         },
@@ -211,6 +212,91 @@ def test_pipeline_subdivides_only_above_hard_limit_with_trace() -> None:
         )
         == oversized_text
     )
+
+
+def test_genuine_oversized_prose_sentence_fails_closed() -> None:
+    """Never silently subdivide a demonstrated indivisible prose sentence."""
+    text = "a" * 900
+
+    with pytest.raises(
+        GenuineOversizedSentenceError,
+        match="GENUINE_OVERSIZED_SENTENCE_BLOCKER.*908 tokens.*512",
+    ):
+        process_document(
+            {
+                "doc_id": "oversized-prose",
+                "fuente": "report.txt",
+                "formato": "txt",
+                "fenomeno": 0,
+                "texto": text,
+            },
+            sentence_splitter=lambda _: [text],
+            token_counter=_counter(),
+            max_tokens=256,
+            overlap_tokens=32,
+            encoder_max_input_tokens=512,
+        )
+
+
+def test_oversized_pdf_sql_is_classified_as_structural() -> None:
+    """Allow traceable hard subdivision for deterministic PDF code structure."""
+    text = " ".join(
+        "SELECT value FROM records JOIN sources ON records.id = sources.id"
+        for _ in range(80)
+    )
+
+    records = process_document(
+        {
+            "doc_id": "pdf-sql",
+            "fuente": "appendix.pdf",
+            "formato": "pdf",
+            "fenomeno": 0,
+            "texto": text,
+        },
+        sentence_splitter=lambda _: [text],
+        token_counter=_counter(),
+        max_tokens=256,
+        overlap_tokens=32,
+        encoder_max_input_tokens=512,
+    )
+
+    assert len(records) > 1
+    assert all(record["hard_split"] is True for record in records)
+    assert all(record["num_tokens"] <= 512 for record in records)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        ", ".join(f"Company {index} Incorporated" for index in range(180)),
+        " ".join(f"• structural list item {index}" for index in range(120)),
+        " ".join(f"term{index} OR field[{index}]" for index in range(120)),
+        " ".join(f"https://example.test/reference/{index}" for index in range(120)),
+        " ".join(f"({index}) structural section" for index in range(120)),
+        " ".join(("AbCdEf0123456789_%-" * 4) for _ in range(40)),
+        "[Pagina 17] • " + "objective " * 700,
+    ],
+)
+def test_oversized_pdf_list_structures_are_hard_split(text: str) -> None:
+    """Recognize deterministic lists and queries without weakening prose failure."""
+    records = process_document(
+        {
+            "doc_id": "pdf-structural-list",
+            "fuente": "appendix.pdf",
+            "formato": "pdf",
+            "fenomeno": 0,
+            "texto": text,
+        },
+        sentence_splitter=lambda _: [text],
+        token_counter=_counter(),
+        max_tokens=256,
+        overlap_tokens=32,
+        encoder_max_input_tokens=512,
+    )
+
+    assert len(records) > 1
+    assert all(record["hard_split"] is True for record in records)
+    assert all(record["num_tokens"] <= 512 for record in records)
 
 
 def test_hidden_non_additivity_cannot_bypass_final_exact_recount() -> None:
