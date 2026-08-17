@@ -112,7 +112,7 @@ could not be established by its approval gate. No retry or bypass was used.
 Publication report commit: local metadata commit following the release content
 commit; see repository HEAD.
 Publication report push: NOT ATTEMPTED after the explicit export rejection.
-PDF integration commit: TO_BE_RECORDED
+PDF integration commit: 4F61EC05681420839192B7094BCDC66D4FED1A16
 PDF integration push: NOT ATTEMPTED; the prior export rejection remains in
 force and was not bypassed.
 
