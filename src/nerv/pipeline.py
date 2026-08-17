@@ -2133,6 +2133,8 @@ def run(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str, Any]]:
                 historical_sha256=args.expected_chunk_sha256,
                 artifact_kind="chunks",
             )
+            if execute:
+                _atomic_json(args.chunk_metrics, chunk_stage_metrics)
             if args.mode == "fresh":
                 fresh_execution = cast(dict[str, Any], manifest["fresh_execution"])
                 fresh_execution["chunk_reproducibility"] = chunk_reproducibility
@@ -2150,7 +2152,6 @@ def run(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str, Any]]:
                         "Historical chunk identity is comparison-only because the "
                         "validated document SHA-256 changed."
                     )
-                _atomic_json(args.chunk_metrics, chunk_stage_metrics)
             manifest["artifacts"]["chunks"] = _artifact(
                 args.chunks, count=cast(int, chunk_info["rows"])
             ) | {
@@ -2159,10 +2160,11 @@ def run(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str, Any]]:
                 ]
             }
             manifest["artifacts"]["chunking_config"] = _artifact(args.chunk_config)
-            if args.mode == "fresh":
+            if execute:
                 manifest["artifacts"]["chunking_metrics"] = _artifact(
                     args.chunk_metrics
                 )
+            if args.mode == "fresh":
                 manifest["artifacts"]["canonical_chunk_validation"] = _artifact(
                     args.chunk_validation
                 )

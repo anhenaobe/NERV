@@ -1,0 +1,175 @@
+STAGE-1 CHUNKING REMEDIATION PREPARATION REPORT
+================================================
+
+1. ROOT CAUSE
+-------------
+Accepted PDF text retains PyMuPDF line/page extraction newlines. PySBD 0.3.4
+emits those newline-delimited fragments as independent units even when the left
+side has no valid linguistic ending and the right side continues it. Chunk
+packing correctly preserves its input units, so the defect enters before
+packing. A second bounded pattern occurs under continuous whitespace where
+PySBD separates lowercase enumerated/abbreviation continuations. The 510-token
+hard limit was not the root cause.
+
+2. ACCEPTED-DOCUMENT SUFFICIENCY
+--------------------------------
+Classification: A. FIXABLE_FROM_ACCEPTED_DOCUMENTOS.
+
+The accepted input remains:
+outputs/runs/20260816-142614-clean-upstream/artifacts/documentos.jsonl
+
+It contains 1,760 documents and preserves single newlines, blank-line/page
+separators, [Pagina N] labels, source format, source path, and document ID.
+That is sufficient provenance for a chunking-layer correction. Ingestion was
+not rerun.
+
+3. FAILURE PATTERNS
+-------------------
+Pattern A - PDF single-line extraction wrap
+Population: 179 of the 184 known official-result PDF boundaries; part of the
+33,615 full-audit source-extraction boundaries.
+Failure: PySBD treats the extraction newline as a completed unit boundary.
+Correction: merge only a non-terminal PDF unit with the next extracted unit
+when lexical continuation, page-label provenance, or a prose-line signal makes
+the ending unsafe.
+
+Pattern B - PDF page/blank-line heading or footnote interruption
+Population: 5 of the 184 known official-result PDF boundaries.
+Failure: a page/blank separator leaves a short heading, label, comma-ended
+clause, or footnote interruption as a stored ending.
+Correction: attach the deterministic short non-terminal structural prefix or
+footnote interruption to its following content; do not invent punctuation.
+
+Pattern C - continuous-whitespace PySBD continuation
+Population: exactly 81 boundaries across 53 documents (78 PDF, 3 JSON).
+Failure: PySBD separates enumerators, abbreviations, legal references, and
+similar spans even though the next new content starts lowercase under
+continuous whitespace.
+Correction: source-order post-segmentation reconciliation merges the adjacent
+units only when the continuous boundary has proven lexical continuation.
+
+Pattern D - genuine sentence boundary / structural field boundary
+Population: control fixtures and five already-correct PDF documents.
+Failure: none.
+Correction: terminal punctuation remains authoritative; newline-delimited JSON
+field labels and tabular rows remain independent structural units.
+
+4. CODE FIX
+-----------
+src/nerv/chunking/sentence_splitter.py now performs document-format-aware,
+source-order reconciliation after bounded PySBD segmentation. It retains PDF
+newline provenance, recognizes page labels and non-terminal prose/structural
+prefixes, rejects JSON field starts, and merges only deterministic invalid
+boundaries. Content is only whitespace-joined; no word or punctuation is
+invented.
+
+src/nerv/chunking/pipeline.py passes document format into segmentation and
+checks reconstructed PDF/TXT units before packing. The frozen 256 target,
+32-token overlap, and effective 510-token limit are unchanged.
+
+5. SPLITTER-81 FIX
+-----------------
+All 81 previously confirmed continuous-whitespace endpoints were reconstructed
+from their stored accepted metadata IDs. Their common discriminant is lowercase
+new content under continuous whitespace. The repaired splitter retained each
+tested bridge within one source-ordered unit. Remaining: 0.
+
+6. STRUCTURAL REGRESSION PROTECTION
+-----------------------------------
+CSV rows still bypass PySBD. JSON field-label newlines are not reconciled.
+Existing hierarchical hard-split metadata remains in use for structural CSV,
+JSON, and deterministically classified PDF SQL/table/list spans. Focused
+fixtures verified <=510 output and hard-split trace fields. No global CSV/JSON
+behavior was changed.
+
+7. OVER-510 POLICY
+------------------
+Every reconstructed PDF/TXT unit is recounted with the frozen tokenizer before
+packing. Deterministically structural SQL/table/list spans may use the existing
+traceable hard-split path. An unclassified indivisible prose unit above 510
+raises GenuineOversizedSentenceError with the exact marker:
+GENUINE_OVERSIZED_SENTENCE_BLOCKER.
+
+No genuine oversized sentence was demonstrated in the bounded remediation
+set. The bounded maximum stored count was 510. No truncation or encoder change
+is permitted.
+
+8. BOUNDED REAL-DOCUMENT TEST
+-----------------------------
+Input evidence was read from the accepted documentos/chunks artifacts and the
+prior official/delivery boundary identity set. No full document corpus was
+chunked.
+
+Known official-result PDF boundaries: 184 tested, 0 remaining.
+Continuous-whitespace splitter boundaries: 81 tested, 0 remaining.
+Already-correct PDF documents: 5 tested, 0 regressions.
+CSV/JSON structural fixtures: PASS.
+Maximum stored tokens: 510.
+Token recount mismatch: 0.
+Empty chunks: 0.
+Ordering errors: 0.
+Overlap contract: PASS.
+Hard-split metadata contract: PASS.
+Generative model used: NO.
+
+9. REGRESSION TESTS
+-------------------
+Permanent focused tests cover PDF page/line continuation, genuine sentence
+boundaries, the continuous enumeration pattern, JSON field boundaries,
+structural hard splits, the 510-token check, and genuine oversized prose
+failure. pytest, Ruff, and mypy were not installed in the available runnable
+Python environment. Direct Python smoke: PASS. Bounded real-artifact gate:
+PASS. Python compilation: PASS. PowerShell AST parsing for all prepared command
+scripts: PASS. git diff --check is recorded in the final validation evidence.
+
+10. FULL CHUNK COMMAND
+----------------------
+Run from the repository root:
+
+.\scripts\run_corrected_chunking.ps1
+
+The script reuses the accepted documentos.jsonl, refuses an existing run
+directory, creates a timestamped new run, executes chunking only, writes
+chunks/config/metrics/manifest/report artifacts, and stops before
+embeddings. The future chunk count is intentionally unconstrained.
+
+11. POST-RUN AUDIT COMMAND
+--------------------------
+Replace the value with CORRECTED_CHUNK_RUN_ID printed by section 10:
+
+.\scripts\audit_corrected_chunks.ps1 -RunId '<CORRECTED_CHUNK_RUN_ID>'
+
+The command performs the canonical tokenizer/ordering/hard-split validation and
+then the linguistic/contamination audit. Its audit status is exactly one of:
+CORRECTED_CHUNKS_PASS, CORRECTED_CHUNKS_FAIL, or
+CORRECTED_CHUNKS_NEEDS_HUMAN_REVIEW.
+
+12. FUTURE DOWNSTREAM COMMAND
+-----------------------------
+This command is guarded by corrected_chunks_audit.json and refuses to start
+unless its status is CORRECTED_CHUNKS_PASS:
+
+.\scripts\run_corrected_downstream.ps1 -ChunkRunId '<CORRECTED_CHUNK_RUN_ID>'
+
+It uses .venv-cuda/Scripts/python.exe, CUDA, batch 16,
+intfloat/multilingual-e5-small, the corrected chunks, official q001-q050,
+new embeddings, new IndexFlatIP artifacts, and a new results lineage.
+
+13. OUTPUT FORMATTER RECOMMENDATION
+-----------------------------------
+KEEP_250_WORD_ONLY. After a corrected lineage returns CORRECTED_CHUNKS_PASS,
+remove the temporary under-250-word incomplete-prose workaround. Retain only
+the deterministic official maximum-250-word presentation responsibility. Do
+not rebuild entrega in this preparation task.
+
+14. TECHNICAL REPORT STATUS
+---------------------------
+docs/integration/informe_tecnico_stage1_source.md was prepared with accepted
+ingestion, contamination exclusion, E5-small/384 configuration, passage/query
+prefixes, L2 normalization, IndexFlatIP, numeric max pooling, deterministic
+retrieval, and Stage-1 no-generative isolation. Chunking is explicitly marked
+PENDING FULL CORPUS ACCEPTANCE. No final PDF was generated.
+
+15. FINAL VERDICT
+-----------------
+READY_FOR_HUMAN_FULL_CHUNK_REGENERATION

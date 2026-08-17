@@ -1,0 +1,278 @@
+STAGE-1 LINGUISTIC-COMPLETENESS DECISION GATE
+================================================
+
+Scope and method
+----------------
+This was a read-only, deterministic audit. It did not use a generative model or
+agent, rebuild chunking, generate embeddings, rebuild FAISS, run retrieval, or
+modify any production or delivery artifact.
+
+Primary source:
+outputs/runs/20260816-142614-clean-upstream/artifacts/chunks.jsonl
+
+The audit scanned every JSONL record in stored order. It used source format,
+doc_id, posicion, adjacent chunks, exact overlap, terminal-boundary behavior,
+lexical continuation, source-document whitespace boundaries, and explicit
+hard_split provenance. A prose truncation was confirmed only when the stored
+boundary and adjacent source coverage established continuation. Absence of
+terminal punctuation alone was not treated as a violation. Unresolved source
+alignment and non-terminal prose-like cases were retained as AMBIGUOUS.
+
+The known set was reconstructed independently as the unique chunk IDs whose
+clean official result text differs from entrega/resultados.jsonl. This produced
+252 changed occurrences and 185 unique IDs, exactly matching the previous
+report. No large text dump was used.
+
+1. FULL CORPUS AUDIT
+--------------------
+Total records: 335371
+Position-order violations: 0
+
+Exclusive classification:
+
+A. COMPLETE_PROSE: 19444
+B. CONFIRMED_PROSE_TRUNCATION: 47142
+C. STRUCTURAL_NON_SENTENCE: 243075
+D. OVERSIZED_SENTENCE_HARD_SPLIT: 0
+E. AMBIGUOUS: 25710
+
+Sum: 335371
+
+The B count is a chunk count, not a boundary count. It is the union of 33696
+confirmed cut-ending chunks and their confirmed continuation-side chunks;
+duplicates where a chunk participates in both roles are counted once. The
+continuation-side check matters because a chunk can begin inside prose yet end
+with punctuation. Output-end formatting alone does not detect that defect.
+
+Of the ambiguous records, 10755 could not be aligned to the source document by
+exact or ordered prefix/suffix anchors after splitter whitespace cleanup. They
+were not promoted to confirmed failures. The confirmed count is therefore a
+conservative lower bound, not a claim that every other record is compliant.
+
+Primary question: YES. The delivered metadata/index contains stored prose
+chunks that violate the task-stated mandatory Stage-1 linguistic-completeness
+requirement.
+
+2. KNOWN 185-CHUNK RECONCILIATION
+---------------------------------
+Changed official-result occurrences: 252
+Unique stored chunk IDs: 185
+Metadata IDs found: 185
+Explicit hard_split records: 0
+
+Final reconciliation:
+
+- 184 unique PDF chunks are confirmed incomplete prose.
+- 1 unique JSON chunk is a repeated structural heading, not incomplete prose.
+- The 184 PDF chunks account for the 251 changed PDF result occurrences.
+- The JSON heading accounts for the remaining one changed occurrence.
+
+The earlier 185-chunk prose total was therefore high by one. The output repair
+treated the JSON heading as prose, but full adjacency/overlap reconciliation
+shows it is a complete structural unit repeated as overlap before the following
+prose.
+
+3. ROOT CAUSES
+--------------
+For the 184 confirmed known PDF chunks:
+
+- normal sentence splitter failure: 0
+- hard-limit subdivision: 0
+- source extraction artifact: 184
+- structured text: 0
+- other: 0
+
+For the one remaining known JSON chunk:
+
+- structured text: 1
+
+For all 33696 confirmed cut-ending boundaries in the full corpus:
+
+- source extraction artifact: 33615
+- normal sentence splitter failure: 81
+- hard-limit subdivision: 0
+- other confirmed cause: 0
+
+The source-extraction classification requires a verified raw newline/page-style
+boundary between the stored tail and its lexical continuation. The splitter
+classification applies where the source was continuous whitespace but PySBD
+still emitted a non-terminal unit. Chunk packing then preserved those defective
+units as though they were complete sentences.
+
+4. HARD-SPLIT ANALYSIS
+----------------------
+The frozen policy is:
+
+preserve_through_encoder_limit_then_hierarchical_subdivide
+
+Explicit stored hard-split evidence:
+
+- parent logical units: 452
+- emitted hard-split chunks: 975
+- CSV hard-split chunks: 936
+- JSON hard-split chunks: 39
+- PDF/TXT prose hard-split chunks: 0
+- maximum recorded parent token count: 10239
+
+All 975 explicit hard-split records are structural CSV/JSON data. They are
+classified STRUCTURAL_NON_SENTENCE, not OVERSIZED_SENTENCE_HARD_SPLIT. None of
+the confirmed incomplete prose chunks was emitted by the hard-limit path.
+
+For confirmed prose hard splits:
+
+- affected chunks: 0
+- source sentences: 0
+- source documents: 0
+- maximum recoverable original sentence token length: N/A
+- could the complete sentence fit within 510 tokens: N/A
+
+A secondary punctuation-span diagnostic found 446 candidate spans above 510
+tokens across 304 documents, affecting 1204 confirmed boundary/continuation
+chunks. The largest candidate was 45459 tokens. These are not accepted as
+recoverable single linguistic sentences: the extreme lengths demonstrate
+missing punctuation, page concatenation, or other extraction structure. They
+remain evidence that corrected extraction/segmentation needs an explicit
+over-510 acceptance policy, but they are not counted as stored prose hard
+splits.
+
+5. SPEC REQUIREMENT
+-------------------
+This decision applies the strict mandatory wording stated in the task for
+Stage-1 section 3.3: linguistic completeness is a CHUNKING requirement.
+
+Under that reading, compliance must hold for the stored chunks represented by
+the vector base. Making only the returned presentation end at existing
+punctuation does not make the indexed/stored chunk linguistically complete.
+The current stored count of 47142 confirmed incomplete prose chunks is therefore
+non-compliant under the stated strict reading.
+
+6. OPTION A
+-----------
+Output-only presentation repair currently implemented.
+
+- Mandatory chunk completeness wording: NO. It repairs selected displayed
+  endings, not stored chunk boundaries or continuation-side starts.
+- FAISS vector to metadata semantic identity: YES, because metadata remains the
+  exact original chunk text.
+- Retrieval validity: YES for the existing vector/index lineage.
+- Expensive regeneration: NO.
+- Risk: HIGH. It can make result validation appear green while the mandatory
+  stored-chunk requirement remains false.
+
+7. OPTION B
+-----------
+Rewrite delivery metadata texto to deterministic complete-sentence excerpts
+while retaining row identity and chunk_id.
+
+- Mandatory chunk completeness wording: PRESENTATION ONLY; not a defensible
+  stored-vector fix.
+- FAISS vector to metadata semantic identity: NO. Each retained vector would
+  represent the original text while metadata would claim a different excerpt.
+- Retrieval validity: RISK. Numeric results still come from the original text,
+  but displayed/traceable metadata would no longer describe what was embedded.
+- Expensive regeneration: NO.
+- Risk: HIGH. This introduces semantic-integrity failure and must not be used to
+  make a validator look green.
+
+8. OPTION C
+-----------
+Correct extraction/sentence segmentation and regenerate chunks, embeddings,
+FAISS, and official results in a new lineage.
+
+- Mandatory chunk completeness wording: YES, provided the regenerated corpus
+  passes an explicit whole-corpus completeness gate and the treatment of any
+  genuine sentence above 510 tokens is spec-approved.
+- FAISS vector to metadata semantic identity: YES. Every vector is regenerated
+  from exactly its new metadata texto.
+- Retrieval validity: YES only after new manifests, ordered row identity,
+  retrieval, and result validation pass. Old rankings/results cannot be reused.
+- Expensive regeneration: YES.
+- Risk: MEDIUM. This is operationally expensive and can change rankings, but it
+  is the only evaluated option that repairs the responsible layer without
+  falsifying semantic identity.
+
+9. SEMANTIC IDENTITY
+--------------------
+Current clean chunks SHA-256:
+5c40066999f7c5799fddcfb4049f64859c9de5e815ff6c0f02c4dbaaf5c14ca2
+
+Current delivery metadata SHA-256:
+5c40066999f7c5799fddcfb4049f64859c9de5e815ff6c0f02c4dbaaf5c14ca2
+
+The files are byte-for-byte equal. Current vector-to-metadata text identity is
+therefore preserved for the accepted lineage.
+
+Changing only metadata(row_i).texto would make it differ from the text used to
+produce vector(row_i). That is a semantic-integrity problem even if chunk_id,
+row number, and manifest fields were retained or rewritten. Metadata-only text
+repair is rejected.
+
+10. MINIMUM COMPLIANT FIX
+-------------------------
+C. FULL_CHUNK_EMBEDDING_FAISS_REGENERATION_REQUIRED
+
+Minimum scope:
+
+1. Correct the deterministic extraction/sentence-boundary behavior that emits
+   prose continuation units as complete splitter units.
+2. Define and validate a strict policy for any genuine sentence that cannot fit
+   within the 510-token encoder-safe limit. If strict completeness permits no
+   subdivision, use a compatible longer-context representation rather than
+   silently cutting the sentence.
+3. Generate a new chunks artifact; do not overwrite the accepted lineage.
+4. Regenerate embeddings from the exact new texto values.
+5. Rebuild FAISS and its ordered metadata/manifest.
+6. Rerun official retrieval and all identity/cardinality/completeness gates.
+
+No full regeneration was started by this task.
+
+11. TECHNICAL REPORT WORDING
+----------------------------
+Truthful wording before remediation:
+
+"NERV applies deterministic ES/EN PySBD sentence segmentation (with the
+documented Portuguese fallback), a 256-token chunk target, complete-unit
+overlap, and a 510-token encoder-safe hard limit. The accepted current vector
+base preserves exact vector-to-metadata identity, but a deterministic
+full-corpus audit identified 47142 stored prose chunks with confirmed
+cross-boundary incompleteness, concentrated in extracted PDF page/newline
+boundaries. Explicit hard-limit subdivision affected only structural CSV/JSON
+records. The delivery formatter shortens selected returned prose to an existing
+terminal boundary; that is output presentation behavior and does not repair the
+stored vector-base chunks."
+
+The report must NOT state any of the following for the current lineage:
+
+- that every stored chunk is linguistically complete;
+- that sentence segmentation guarantees complete prose chunks;
+- that the output formatter fixes chunking compliance;
+- that metadata text can be changed independently of its vector;
+- that oversized prose sentences were safely hard-split while preserving
+  linguistic completeness.
+
+After regeneration, stronger wording is allowed only if the new whole-corpus
+gate, vector/metadata identity, index manifests, and official retrieval all
+pass on the regenerated lineage.
+
+12. SUBMISSION RISK
+-------------------
+HIGH_RISK under the task-stated strict reading of Stage-1 section 3.3.
+
+Reason: the current delivery is reproducible and vector/metadata-aligned, but
+the mandatory requirement applies to stored chunking, and at least 47142 stored
+prose chunks are confirmed incomplete. The output formatter cannot cure that
+layer, while metadata-only repair would introduce a different integrity defect.
+
+13. FINAL DECISION
+------------------
+CURRENT_OUTPUT_REPAIR: INSUFFICIENT
+METADATA_VECTOR_IDENTITY: PASS for the current byte-identical delivery
+MINIMUM_COMPLIANT_FIX: C
+FULL_REGENERATION_REQUIRED: YES
+CURRENT_SUBMISSION_RISK: HIGH
+INFORME_TECNICO: WAIT
+
+Exact next action:
+Obtain explicit human approval for a new isolated corrected-chunking lineage
+that regenerates chunks, embeddings, FAISS, and official results without
+overwriting the accepted current artifacts.

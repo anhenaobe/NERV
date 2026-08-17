@@ -1,0 +1,108 @@
+CODEFEST STAGE-1 RELEASE REPORT
+===============================
+
+REPOSITORY ORGANIZATION
+-----------------------
+PASS. The development architecture remains in config/, src/, tests/, scripts/,
+docs/, outputs/, and entrega/. Core modules were not moved. README.md explains
+the deterministic Stage-1 boundary and the official entrega/ layout. Generated
+corpus/runtime artifacts and local environments remain outside normal Git
+history.
+
+FINAL LINEAGE IDENTITY
+----------------------
+Accepted corrected-chunk input:
+- documents: 1760
+- documents SHA-256:
+  96542C7AF4245BA7EAF21B69DBA7C1C84034B23931D3A938DD4A83CD8D8C2686
+- source run: 20260816-142614-clean-upstream
+
+No corrected chunk lineage is final in this release. Run
+20260816-211304-stage1-corrected-chunks failed closed before writing chunks.
+Run 20260816-233354-stage1-corrected-chunks was human-controlled and still had
+status=running at the release gate. No corrected_chunks_audit.json with status
+CORRECTED_CHUNKS_PASS existed. Consequently, final chunk run ID, chunk count,
+chunk SHA-256, max stored tokens, incomplete-prose count,
+continuation-boundary count, and final contamination status are not claimed.
+
+CORRECTED CHUNK COMPLIANCE
+--------------------------
+PENDING. Source remediation and bounded preflight are complete. The preflight
+examined 1,709,477 reconstructed units across 1,760 documents, exactly counted
+42,661 candidates, classified all 497 units over 510 as structural, and found
+zero prose candidates over 510 and zero ambiguous candidates. Full acceptance
+still requires CORRECTED_CHUNKS_PASS from the completed human run.
+
+DOWNSTREAM STATUS
+-----------------
+DOWNSTREAM_PENDING. Embeddings, FAISS, metadata, and official results from the
+previous non-compliant chunk lineage were not promoted as corrected artifacts.
+The large local files already under entrega/ were deliberately left unstaged
+and must be replaced only from a corrected audited downstream lineage.
+
+DELIVERY ARTIFACT STATUS
+------------------------
+- entrega/generador.py: source ready; deterministic and generative-free.
+- entrega/resultados.jsonl: corrected artifact pending.
+- entrega/base_vectorial/encoder_intfloat_multilingual-e5-small/index.faiss:
+  corrected artifact pending and intentionally outside this Git commit.
+- entrega/base_vectorial/encoder_intfloat_multilingual-e5-small/metadata.jsonl:
+  corrected artifact pending and intentionally outside this Git commit.
+- entrega/informe_tecnico.pdf: not generated from an incomplete lineage.
+
+TECHNICAL REPORT STATUS
+-----------------------
+docs/integration/informe_tecnico_stage1_source.md is finalized for the current
+source-ready state and documents the accepted facts and withheld final counts.
+A competition PDF was not generated because the mandatory final corrected
+artifact counts and measured runtimes do not yet exist. Creating a provisional
+PDF would violate the no-placeholder and no-contradiction gate. Human action is
+required after corrected downstream acceptance; the PDF must open and contain
+at most eight pages.
+
+GENERATIVE ISOLATION
+--------------------
+PASS. Stage 1 uses the public E5 encoder, L2 normalization, FAISS IndexFlatIP,
+numeric ranking, and numeric max pooling only. Agent/reasoning modules are
+Stage-2-only and are not imported by entrega/generador.py or the Stage-1
+pipeline.
+
+VALIDATION
+----------
+- focused pytest: 89 passed, 2 optional real-tokenizer tests skipped because
+  NERV_TEST_ENCODER_MODEL was not configured
+- Ruff on changed Python source/tests: PASS
+- Python compileall on changed source/scripts: PASS
+- PowerShell AST parse on three corrected-run operator scripts: PASS
+- mypy: NOT AVAILABLE in the bounded validation interpreter
+- query JSONL IDs/cardinality: PASS
+- generator/README/delivery path smoke checks: PASS
+- git diff --check: PASS (line-ending conversion warnings only)
+- staged secret/path/size review: PASS
+
+REPRODUCIBILITY
+---------------
+The corrected workflow is gated: create a new chunk run, audit it, and permit
+downstream only when the audit status is CORRECTED_CHUNKS_PASS. The delivery
+generator loads the submitted index/metadata directly, enforces q001-q050,
+preserves exact query-prefix and L2 semantics, applies deterministic numeric
+retrieval/max pooling, and validates the output schema. Full delivery
+reproducibility cannot be executed until corrected downstream artifacts exist.
+
+REMAINING BLOCKER
+-----------------
+The human-controlled corrected chunk run must finish and pass its independent
+audit. Corrected downstream artifacts and the final <=8-page PDF must then be
+produced and validated. No production stage was started, duplicated, stopped,
+or modified by this release task.
+
+PUBLICATION
+-----------
+Release content commit: TO_BE_RECORDED
+Release content push: TO_BE_RECORDED
+Publication report commit: TO_BE_RECORDED
+Publication report push: TO_BE_RECORDED
+
+FINAL VERDICT
+-------------
+CODEFEST_STAGE1_SOURCE_READY_DOWNSTREAM_PENDING

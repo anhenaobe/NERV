@@ -8,6 +8,7 @@ from nerv.chunking.language_detector import detect_language
 from nerv.chunking.sentence_splitter import (
     _PYSBD_LANGUAGE_CODES,
     _get_pysbd_segmenter,
+    _split_sentences_bounded_with_stats,
     split_sentences,
 )
 
@@ -176,3 +177,96 @@ def test_portuguese_shares_the_cached_spanish_backend() -> None:
     assert english is not spanish
     assert _get_pysbd_segmenter.cache_info().maxsize == 2
     assert _get_pysbd_segmenter.cache_info().currsize == 2
+
+
+def test_pdf_page_and_line_wraps_do_not_cut_continuing_prose() -> None:
+    """Reconcile synthetic page labels and extraction line wraps in place."""
+    text = (
+        "[Pagina 1]\nThe extracted sentence reaches the end of this page and\n\n"
+        "[Pagina 2]\ncontinues on the next page without invented punctuation. "
+        "A genuine sentence follows."
+    )
+
+    result = _split_sentences_bounded_with_stats(
+        text,
+        language="en",
+        document_format="pdf",
+    ).sentences
+
+    assert result == [
+        (
+            "[Pagina 1] The extracted sentence reaches the end of this page and "
+            "[Pagina 2] continues on the next page without invented punctuation."
+        ),
+        "A genuine sentence follows.",
+    ]
+
+
+def test_pdf_short_table_cells_do_not_chain_into_one_prose_unit() -> None:
+    """Keep dense newline-delimited table cells independently packable."""
+    text = (
+        "AI Skill Cluster\n"
+        "Skill\n"
+        "Artificial Intelligence\n"
+        "Expert System\n"
+        "IBM Watson\n"
+        "Skill Cluster\n"
+        "AI\n"
+        "AI\n"
+        "In addition, the taxonomy assigns skills to clusters."
+    )
+
+    result = _split_sentences_bounded_with_stats(
+        text,
+        language="en",
+        document_format="pdf",
+    ).sentences
+
+    assert result[:8] == [
+        "AI Skill Cluster",
+        "Skill",
+        "Artificial Intelligence",
+        "Expert System",
+        "IBM Watson",
+        "Skill Cluster",
+        "AI",
+        "AI In addition, the taxonomy assigns skills to clusters.",
+    ]
+
+
+def test_continuous_whitespace_pysbd_enumeration_is_reconciled() -> None:
+    """Merge the confirmed lowercase enumeration pattern emitted by PySBD."""
+    text = (
+        "The framework has three parts: i) detection, ii) review, and "
+        "iii) remediation. The next sentence remains independent."
+    )
+
+    result = _split_sentences_bounded_with_stats(
+        text,
+        language="en",
+        document_format="json",
+    ).sentences
+
+    assert result == [
+        (
+            "The framework has three parts: i) detection, ii) review, and "
+            "iii) remediation."
+        ),
+        "The next sentence remains independent.",
+    ]
+
+
+def test_structural_json_field_boundary_is_not_reconciled() -> None:
+    """Keep newline-delimited JSON field records independent without punctuation."""
+    text = "title: Structural heading\nbody_paragraphs[0]: prose starts here"
+
+    result = _split_sentences_bounded_with_stats(
+        text,
+        language="en",
+        document_format="json",
+    ).sentences
+
+    assert result == [
+        "title: Structural heading",
+        "body_paragraphs[0]: prose starts here",
+    ]

@@ -2,6 +2,7 @@
 
 from collections.abc import Callable, Mapping, Sequence
 from functools import lru_cache
+from inspect import Parameter, signature
 from typing import Protocol, cast
 
 
@@ -57,6 +58,15 @@ class TokenCounter:
         loaded_tokenizer = tokenizer or self._load_tokenizer()
         self._tokenizer = cast(_TokenizerProtocol, loaded_tokenizer)
         self._return_length_supported: bool | None = None
+        try:
+            tokenizer_parameters = signature(loaded_tokenizer.__call__).parameters
+        except (TypeError, ValueError):
+            self._verbose_supported = False
+        else:
+            self._verbose_supported = "verbose" in tokenizer_parameters or any(
+                parameter.kind is Parameter.VAR_KEYWORD
+                for parameter in tokenizer_parameters.values()
+            )
 
     def _try_returned_lengths(
         self,
@@ -78,14 +88,16 @@ class TokenCounter:
 
         tokenizer_call = cast(Callable[..., object], self._tokenizer)
         try:
-            encoded = tokenizer_call(
-                text,
-                add_special_tokens=self._add_special_tokens,
-                truncation=False,
-                return_length=True,
-                return_attention_mask=False,
-                return_token_type_ids=False,
-            )
+            options: dict[str, object] = {
+                "add_special_tokens": self._add_special_tokens,
+                "truncation": False,
+                "return_length": True,
+                "return_attention_mask": False,
+                "return_token_type_ids": False,
+            }
+            if self._verbose_supported:
+                options["verbose"] = False
+            encoded = tokenizer_call(text, **options)
         except TypeError as error:
             message = str(error)
             optimized_options = (
