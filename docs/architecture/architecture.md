@@ -54,13 +54,15 @@ ejecución son relativos a la raíz o son proporcionados por el llamador.
 ## Estado E2E
 
 Los subsistemas y sus contratos cruzados están implementados y cuentan con
-pruebas. El run fresh aceptado produjo 1761 documentos y 335393 chunks sin
-errores de validación. La continuación `resume-fresh` ejecutó embeddings en CUDA,
-publicó 335393 vectores de 384 dimensiones, construyó un `IndexFlatIP` con
-`ntotal=335393` y completó recuperación/validación con el fixture sintético.
+pruebas. La ejecución de 1.761 documentos y 335.393 chunks validó históricamente
+la infraestructura E2E, embeddings CUDA, `IndexFlatIP` y recuperación, pero fue
+anterior a la exclusión de contaminación y a la auditoría estricta de completitud
+lingüística. Esos conteos son evidencia histórica, no el estado corregido actual.
 
-El documento real de 50 consultas existe como PDF privado, pero su capa de
-texto no preserva correctamente los caracteres españoles. Requiere un adaptador
-pequeño y verificado a JSONL antes de ejecutar consultas oficiales. Este trabajo
-pendiente no invalida la aceptación de infraestructura E2E y no autoriza llamar
-oficiales a los resultados sintéticos.
+La entrada aceptada para la corrección contiene 1.760 documentos. El preflight
+acotado pasó, pero la línea completa de chunks corregidos todavía requiere
+`CORRECTED_CHUNKS_PASS`; por eso embeddings, FAISS, metadata y resultados
+corregidos permanecen pendientes. El adaptador privado de consultas q001-q050 y
+el contrato de entrega fueron validados sobre la línea histórica, sin métricas
+oficiales de relevancia. El estado vigente y los límites exactos están en
+[`codefest_stage1_release_report.txt`](../integration/codefest_stage1_release_report.txt).

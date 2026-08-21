@@ -1,9 +1,14 @@
 # NERV
 
-NERV is a deterministic multilingual vector-retrieval system built for
-CODEFEST AD ASTRA 2026 Stage 1. It turns a heterogeneous evidence corpus into
-traceable documents and encoder-safe chunks, indexes their normalized vectors,
-and returns ranked documents and source fragments for the 50 official queries.
+NERV is a collaborative Team NERV project: a deterministic multilingual
+vector-retrieval system built for CODEFEST AD ASTRA 2026 Stage 1. It turns a
+heterogeneous evidence corpus into traceable documents and encoder-safe chunks,
+indexes their normalized vectors, and returns ranked documents and source
+fragments for the 50 official queries.
+
+The repository documents team-level functionality rather than sole authorship.
+Commit-backed contribution boundaries are summarized in
+[`docs/CONTRIBUTIONS.md`](docs/CONTRIBUTIONS.md).
 
 Stage 1 contains no agent, large language model, or generative API in its data,
 ranking, or serialization path. Experimental agents under `src/nerv/agents/`
@@ -68,6 +73,10 @@ python -m pip install -e .
 The public encoder must be available to SentenceTransformers. For a fully
 offline run, cache it beforehand and pass `--local-files-only`.
 
+`requirements.txt` and `requirements-dev.txt` list direct dependencies without
+locking the exact historical environment. They are sufficient setup guidance,
+not a byte-for-byte environment reproduction claim.
+
 ## CODEFEST delivery
 
 The mandatory submission package is:
@@ -98,6 +107,13 @@ retrieval and max-pooling aggregation, and writes exactly 50 JSONL records.
 
 ## Reproducibility and release state
 
+**Current portfolio/source status:** `CODEFEST_STAGE1_SOURCE_READY_DOWNSTREAM_PENDING`.
+The deterministic implementation, delivery generator, technical report, and
+bounded correction evidence are publishable. A final corrected chunk lineage
+and its downstream embeddings, FAISS index, metadata, and results remain gated
+on `CORRECTED_CHUNKS_PASS`; the repository does not present earlier runtime
+artifacts as that corrected release.
+
 Run manifests bind semantic configuration, artifact hashes, counts, stage
 parents, and ordered metadata identity. Production artifacts are generated in
 new run directories and are never silently overwritten or inferred from file
@@ -114,6 +130,12 @@ Operator workflow and evidence are in `docs/integration/`. Generated corpus,
 embeddings, indexes, results, logs, local environments, and model caches are
 excluded from normal Git history; the actual validated runtime artifacts must
 be copied into `entrega/` for the competition submission package.
+
+Reports containing the older 1,761-document / 335,393-chunk infrastructure
+lineage are retained as historical validation evidence. They are not the
+authority for the current corrected Stage-1 release; see the
+[current release report](docs/integration/codefest_stage1_release_report.txt)
+and the [integration evidence index](docs/integration/README.md).
 
 ## Quality checks
 
@@ -132,5 +154,7 @@ Do not start full-corpus stages merely as a repository validation step.
 - [Architecture](docs/architecture/architecture.md)
 - [Pipeline contract](docs/architecture/pipeline.md)
 - [Stage-1 technical source](docs/integration/informe_tecnico_stage1_source.md)
+- [Current Stage-1 release status](docs/integration/codefest_stage1_release_report.txt)
+- [Contribution and authorship boundaries](docs/CONTRIBUTIONS.md)
 - [Delivery notes](entrega/README.md)
 - [Contribution guide](CONTRIBUTING.md)

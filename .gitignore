@@ -25,6 +25,8 @@ corpus/queries/*
 !corpus/queries/.gitkeep
 outputs/*
 !outputs/.gitkeep
+entrega/resultados.jsonl
+entrega/base_vectorial/
 
 # Artefactos de modelos, embeddings e indices
 *.faiss

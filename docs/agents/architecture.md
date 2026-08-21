@@ -1,5 +1,10 @@
 # NERV agent architecture
 
+> **Experimental Stage 2.** This layer is separate from the deterministic
+> CODEFEST Stage-1 ingestion-to-retrieval route and is not imported by the
+> Stage-1 generator. Its presence does not change the current Stage-1 release
+> status.
+
 ## Purpose
 
 The agent layer converts a user question into a grounded answer while keeping

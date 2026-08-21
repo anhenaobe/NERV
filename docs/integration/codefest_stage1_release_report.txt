@@ -96,15 +96,19 @@ preserves exact query-prefix and L2 semantics, applies deterministic numeric
 retrieval/max pooling, and validates the output schema. Full delivery
 reproducibility cannot be executed until corrected downstream artifacts exist.
 
-REMAINING BLOCKER
------------------
+REMAINING CODEFEST DELIVERY GATE
+--------------------------------
 The human-controlled corrected chunk run must finish and pass its independent
 audit. Corrected downstream artifacts must then be produced and validated. No
 production stage was started, duplicated, stopped, or modified by this release
 task.
 
-PUBLICATION
------------
+PUBLICATION AT REPORT CREATION
+------------------------------
+This section records the original 2026-08-17 publication attempt. It is
+historical operational evidence, not a live synchronization check; current
+local/remote state must be verified directly from Git.
+
 Release content commit: 98D2A442EB9E4ACFB5075DDF2272ED41CF7905E9
 Release content push: FAIL. The execution environment rejected outbound export
 to the configured GitHub remote because ownership/trust of that destination

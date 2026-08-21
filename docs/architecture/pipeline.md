@@ -1,6 +1,6 @@
 # NERV Pipeline Contract
 
-> Current implementation and operational flow: 2026-08-13. A Spanish plain
+> Current implementation and operational flow: 2026-08-21. A Spanish plain
 > text walkthrough is maintained in
 > `docs/chunking/current_chunking_pipeline_flow.txt`.
 
@@ -13,7 +13,10 @@ metadata and information needed for traceability.
 ## 2. Chunking
 
 The implemented chunking stage streams the established JSONL contract, detects
-Spanish/English/Portuguese, splits complete sentences, and writes stable chunks.
+Spanish/English/Portuguese, applies deterministic sentence-boundary handling,
+and writes stable chunks. Complete-prose compliance is an explicit release gate;
+the current corrected full-corpus lineage is not accepted until its independent
+audit returns `CORRECTED_CHUNKS_PASS`.
 It sizes candidates with the tokenizer for
 `intfloat/multilingual-e5-small`: soft target 256 IDs, total encoder capacity
 512 IDs, derived safe stored-input limit 510 IDs, whole-sentence overlap target
@@ -95,21 +98,28 @@ and ranking.
 
 `nerv.pipeline` implements ingestion through validation with isolated run
 directories, atomic checkpoints, stage reuse/force policy and `resume-fresh`
-lineage validation. The accepted fresh chain contains 1761 documents, 335393
-chunks, a 335393 x 384 CUDA embedding matrix and an `IndexFlatIP` with matching
-`ntotal`. Infrastructure retrieval and validation passed with the designated 50
-synthetic queries.
+lineage validation. A historical chain containing 1,761 documents and 335,393
+chunks validated the CUDA embedding, `IndexFlatIP`, retrieval, and artifact
+contracts. Later contamination and linguistic-completeness work superseded that
+lineage for corrected Stage-1 release claims.
+
+The current corrected input contains 1,760 documents. Its bounded preflight
+passed, but corrected full-corpus chunks and all downstream artifacts remain
+release-gated. Current status is authoritative in
+`docs/integration/codefest_stage1_release_report.txt`; historical reports retain
+their original measurements for engineering traceability.
 
 Published embedding pairs are immutable. `--force-stage embeddings` can only be
 used with unused `--embeddings` and `--embedding-manifest` paths; it never
 authorizes overwriting an existing matrix or manifest.
 
-The real 50-query PDF is not directly consumable because its embedded text
-mapping corrupts Spanish punctuation and accents. It must be transcribed or
-OCRed into human-verified UTF-8 JSONL before official retrieval. Synthetic
-results must never be represented as official competition results.
+The private 50-query source was converted into a human-verified UTF-8 q001-q050
+adapter and used to validate the delivery contract on the historical lineage.
+The query text remains outside Git. Those results demonstrate processing and
+integrity, not hidden-label relevance quality, and must not be represented as
+the final corrected-lineage output.
 
-Sanitized production evidence is recorded in
+Historical production evidence is recorded in
 `docs/integration/final_production_status.txt`. The detailed query audit remains
 local because it contains private source metadata. Chunking internals remain
 described in `docs/chunking/current_chunking_pipeline_flow.txt`.
