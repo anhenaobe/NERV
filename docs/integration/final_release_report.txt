@@ -1,3 +1,9 @@
+HISTORICAL VALIDATION RECORD - SUPERSEDED FOR CURRENT RELEASE STATUS
+This 2026-08-13 report describes the earlier 1,761-document / 335,393-chunk
+publication lineage. It remains historical engineering evidence, but it is not
+the authority for the corrected Stage-1 release. See
+docs/integration/codefest_stage1_release_report.txt.
+
 NERV FINAL RELEASE REPORT
 Audit date: 2026-08-13
 
