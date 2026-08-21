@@ -6,7 +6,7 @@ import pytest
 
 from nerv.chunking.configuration import derive_effective_content_max_tokens
 from nerv.chunking.hard_limit import split_hard_limited_text
-from nerv.chunking.pipeline import process_document
+from nerv.chunking.pipeline import GenuineOversizedSentenceError, process_document
 
 
 class _CharacterCounter:
@@ -102,7 +102,7 @@ def test_hard_split_uses_derived_effective_boundary(stored_count: int) -> None:
         assert all(part.token_count <= 510 for part in result.parts)
 
 
-def test_pipeline_preserves_metadata_when_511_token_parent_is_split() -> None:
+def test_pipeline_rejects_511_token_indivisible_prose_unit() -> None:
     counter = _CharacterCounter()
     document = {
         "doc_id": "BOUNDARY-511",
@@ -111,19 +111,16 @@ def test_pipeline_preserves_metadata_when_511_token_parent_is_split() -> None:
         "fenomeno": 7,
         "texto": "x" * 509,
     }
-    records = process_document(
-        document,  # type: ignore[arg-type]
-        sentence_splitter=lambda text: [text],
-        token_counter=counter,  # type: ignore[arg-type]
-        max_tokens=256,
-        overlap_tokens=32,
-        encoder_max_input_tokens=_capacity(),
-    )
-    assert len(records) >= 2
-    assert all(record["doc_id"] == document["doc_id"] for record in records)
-    assert all(record["fuente"] == document["fuente"] for record in records)
-    assert all(record["formato"] == document["formato"] for record in records)
-    assert all(record["fenomeno"] == document["fenomeno"] for record in records)
-    assert all(record["num_tokens"] <= 510 for record in records)
-    assert all(record["hard_split_parent_num_tokens"] == 511 for record in records)
-    assert [record["posicion"] for record in records] == list(range(len(records)))
+
+    with pytest.raises(
+        GenuineOversizedSentenceError,
+        match="GENUINE_OVERSIZED_SENTENCE_BLOCKER.*511 tokens.*510",
+    ):
+        process_document(
+            document,  # type: ignore[arg-type]
+            sentence_splitter=lambda text: [text],
+            token_counter=counter,  # type: ignore[arg-type]
+            max_tokens=256,
+            overlap_tokens=32,
+            encoder_max_input_tokens=_capacity(),
+        )
